@@ -68,7 +68,7 @@ export default function LoginPage() {
                 required
                 autoComplete="username"
                 placeholder="Email address"
-                className="w-full bg-transparent text-sm text-ink-800 placeholder:text-ink-400 focus:outline-none"
+                className="w-full bg-transparent text-base text-ink-800 placeholder:text-ink-400 focus:outline-none sm:text-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
@@ -81,7 +81,7 @@ export default function LoginPage() {
                 required
                 autoComplete="current-password"
                 placeholder="Password"
-                className="w-full bg-transparent text-sm text-ink-800 placeholder:text-ink-400 focus:outline-none"
+                className="w-full bg-transparent text-base text-ink-800 placeholder:text-ink-400 focus:outline-none sm:text-sm"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
