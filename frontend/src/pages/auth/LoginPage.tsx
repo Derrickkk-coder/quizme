@@ -1,11 +1,11 @@
 import { FormEvent, useState } from "react";
 import { Navigate, useLocation, useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import loginIllustration from "../../assets/login-illustration.png";
 import { useAuth } from "../../context/AuthContext";
 import { roleHomePath } from "../../routes/ProtectedRoute";
 import { apiErrorMessage } from "../../api/client";
-import { Logo } from "../../components/Logo";
+import { Logo, LogoMark } from "../../components/Logo";
 
 export default function LoginPage() {
   const { user, login } = useAuth();
@@ -39,7 +39,77 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen">
-      <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-20">
+      {/* Mobile / tablet — soft neumorphic layout */}
+      <div className="neu-surface relative flex w-full flex-col items-center justify-center overflow-hidden px-6 py-12 lg:hidden">
+        <div
+          className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 bg-gradient-to-tr from-brand-700 to-brand-400"
+          style={{ clipPath: "polygon(0 100%, 55% 100%, 0 40%)" }}
+        />
+        <div
+          className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-gradient-to-br from-accent-300/40 to-brand-300/40 blur-2xl"
+        />
+
+        <div className="relative z-10 w-full max-w-sm">
+          <div className="flex flex-col items-center text-center">
+            <div className="neu-raised flex h-20 w-20 items-center justify-center rounded-3xl bg-ink-50">
+              <LogoMark className="h-11 w-11" />
+            </div>
+            <p className="mt-3 text-xs font-bold tracking-wide text-ink-400">QUIZME</p>
+
+            <h1 className="mt-4 text-2xl font-bold text-ink-900">Welcome Back</h1>
+            <p className="mt-1 text-sm text-ink-500">Login to continue to your account</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            {error && <div className="rounded-lg bg-red-50 px-3 py-2 text-center text-sm text-red-700">{error}</div>}
+
+            <div className="neu-inset flex items-center gap-3 rounded-2xl bg-ink-50 px-4 py-3.5">
+              <Mail className="h-4 w-4 shrink-0 text-ink-400" />
+              <input
+                type="email"
+                required
+                autoComplete="username"
+                placeholder="Email address"
+                className="w-full bg-transparent text-sm text-ink-800 placeholder:text-ink-400 focus:outline-none"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="neu-inset flex items-center gap-3 rounded-2xl bg-ink-50 px-4 py-3.5">
+              <Lock className="h-4 w-4 shrink-0 text-ink-400" />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
+                autoComplete="current-password"
+                placeholder="Password"
+                className="w-full bg-transparent text-sm text-ink-800 placeholder:text-ink-400 focus:outline-none"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="shrink-0 text-ink-400 hover:text-ink-600"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="neu-button w-full rounded-2xl bg-gradient-to-r from-brand-600 to-brand-500 py-3.5 text-sm font-semibold text-white transition-transform active:scale-[0.98] disabled:opacity-60"
+            >
+              {loading ? "Signing in…" : "Login"}
+            </button>
+          </form>
+        </div>
+      </div>
+
+      {/* Desktop — split panel layout */}
+      <div className="hidden w-1/2 flex-col justify-center px-12 py-12 lg:flex lg:px-20">
         <div className="mx-auto w-full max-w-sm">
           <a href="/">
             <Logo />

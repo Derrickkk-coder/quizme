@@ -85,6 +85,25 @@
   .animate-marquee {
     animation: marquee 22s linear infinite;
   }
+
+  .neu-surface {
+    background: #eef0f9;
+  }
+  .neu-raised {
+    box-shadow:
+      10px 10px 20px rgba(148, 138, 209, 0.25),
+      -10px -10px 20px rgba(255, 255, 255, 0.85);
+  }
+  .neu-inset {
+    box-shadow:
+      inset 5px 5px 10px rgba(148, 138, 209, 0.2),
+      inset -5px -5px 10px rgba(255, 255, 255, 0.85);
+  }
+  .neu-button {
+    box-shadow:
+      6px 6px 14px rgba(79, 70, 229, 0.35),
+      -4px -4px 12px rgba(255, 255, 255, 0.5);
+  }
 }
 
 @layer components {
