@@ -37,11 +37,6 @@ export default function LoginPage() {
     }
   }
 
-  function fillDemo(role: "admin" | "teacher1" | "student1") {
-    setEmail(`${role}@quizme.com`);
-    setPassword("Passw0rd!");
-  }
-
   return (
     <div className="flex min-h-screen">
       <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-20">
@@ -102,21 +97,6 @@ export default function LoginPage() {
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
-
-          <div className="mt-8 rounded-xl border border-ink-100 bg-ink-50 p-4">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-400">Demo accounts</p>
-            <div className="flex flex-wrap gap-2">
-              <button className="btn-secondary btn-sm" onClick={() => fillDemo("admin")}>
-                Admin
-              </button>
-              <button className="btn-secondary btn-sm" onClick={() => fillDemo("teacher1")}>
-                Teacher
-              </button>
-              <button className="btn-secondary btn-sm" onClick={() => fillDemo("student1")}>
-                Student
-              </button>
-            </div>
-          </div>
         </div>
       </div>
 
