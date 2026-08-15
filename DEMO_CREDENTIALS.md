@@ -1,21 +1,19 @@
-# QUIZME Demo Credentials
+# QUIZME Credentials
 
-These accounts are created by the seed script (`npm run seed` in `backend/`) for local
-demonstration only. **Never use these credentials, or this password, in a real deployment.**
-Change or remove the seed script before deploying to production.
+The production database has been reset to a single account. All demo teachers, students,
+classes, subjects, quizzes, and questions from the original seed have been removed.
 
-Demo password for every seeded account: `Passw0rd!`
+| Role  | Email             | Notes                          |
+|-------|-------------------|----------------------------------|
+| Admin | admin@quizme.com  | Password: `Passw0rd!` — change this on first login. |
 
-| Role    | Email                    | Notes                                   |
-|---------|--------------------------|------------------------------------------|
-| Admin   | admin@quizme.com         | Full platform access                     |
-| Teacher | teacher1@quizme.com      | Teaches Mathematics (JHS 2A, JHS 2B) and Integrated Science (JHS 2A) |
-| Teacher | teacher2@quizme.com      | Teaches English Language & Social Studies (JHS 1A, JHS 1B) |
-| Student | student1@quizme.com      | JHS 2A                                   |
-| Student | student2@quizme.com      | JHS 2A                                   |
+Create real classes, subjects, teachers, and students from the Admin dashboard. New users get
+a randomly generated temporary password (shown once at creation time) and are required to
+change it on first login.
 
-Additional demo students are seeded across JHS 1A, JHS 1B, JHS 2A, and JHS 2B with generated
-emails (`studentN@quizme.com`) — see `backend/prisma/seed.ts` for the full list.
+## Local development seed data
 
-Real users created through the Admin dashboard get a randomly generated temporary password
-(shown once at creation time) and are required to change it on first login.
+`backend/prisma/seed.ts` still seeds a full demo dataset (teachers, students, classes,
+subjects, quizzes) for local development against your own database. It uses `upsert`, so
+running `npm run seed` again is safe and won't delete anything — it only adds/updates the
+demo records. Do not run it against the production database if you want to keep it clean.
