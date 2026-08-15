@@ -17,13 +17,19 @@ const accentClasses: Record<NonNullable<StatCardProps["accent"]>, string> = {
 
 export function StatCard({ label, value, icon, hint, accent = "brand" }: StatCardProps) {
   return (
-    <div className="card flex items-start justify-between gap-3 p-5">
-      <div>
-        <p className="text-sm font-medium text-ink-500">{label}</p>
-        <p className="mt-1 text-2xl font-bold text-ink-900">{value}</p>
+    <div className="card flex items-start justify-between gap-2 p-3 sm:gap-3 sm:p-5">
+      <div className="min-w-0">
+        <p className="truncate text-xs font-medium text-ink-500 sm:text-sm">{label}</p>
+        <p className="mt-0.5 text-lg font-bold text-ink-900 sm:mt-1 sm:text-2xl">{value}</p>
         {hint && <p className="mt-1 text-xs text-ink-400">{hint}</p>}
       </div>
-      {icon && <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${accentClasses[accent]}`}>{icon}</div>}
+      {icon && (
+        <div
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:h-10 sm:w-10 sm:rounded-xl ${accentClasses[accent]}`}
+        >
+          {icon}
+        </div>
+      )}
     </div>
   );
 }

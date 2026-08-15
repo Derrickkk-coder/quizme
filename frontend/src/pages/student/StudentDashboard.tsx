@@ -37,7 +37,7 @@ export default function StudentDashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Available quizzes" value={quizzes?.available.length ?? 0} icon={<BookOpenCheck className="h-5 w-5" />} accent="brand" />
         <StatCard label="Completed quizzes" value={quizzes?.completed.length ?? 0} icon={<CheckCircle2 className="h-5 w-5" />} accent="accent" />
         <StatCard label="Average score" value={formatPercent(performance?.overallAverage)} icon={<TrendingUp className="h-5 w-5" />} accent="amber" />

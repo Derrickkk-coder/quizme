@@ -89,7 +89,7 @@ function QuizAnalyticsView({ data }: { data: QuizAnalytics }) {
         <p className="text-sm text-ink-500">{data.quiz.title}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Students" value={data.totalStudents} icon={<Users className="h-4 w-4" />} />
         <StatCard label="Average" value={formatPercent(data.average)} icon={<TrendingUp className="h-4 w-4" />} />
         <StatCard label="Pass rate" value={formatPercent(data.passRate)} icon={<Target className="h-4 w-4" />} accent="accent" />

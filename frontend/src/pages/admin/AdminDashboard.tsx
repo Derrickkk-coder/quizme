@@ -23,7 +23,7 @@ export default function AdminDashboard() {
         <p className="mt-1 text-sm text-ink-500">A live snapshot of activity across QUIZME.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard label="Students" value={totals.totalStudents} icon={<GraduationCap className="h-4 w-4" />} accent="brand" />
         <StatCard label="Teachers" value={totals.totalTeachers} icon={<School className="h-4 w-4" />} accent="accent" />
         <StatCard label="Classes" value={totals.totalClasses} icon={<BookMarked className="h-4 w-4" />} accent="amber" />
@@ -32,7 +32,7 @@ export default function AdminDashboard() {
         <StatCard label="Avg. school score" value={formatPercent(totals.averageSchoolScore)} icon={<TrendingUp className="h-4 w-4" />} accent="brand" />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
         <StatCard label="Total quizzes" value={totals.totalQuizzes} />
         <StatCard label="Closed quizzes" value={totals.closedQuizzes} />
         <StatCard label="Overall pass rate" value={formatPercent(totals.overallPassRate)} accent="accent" />

@@ -31,7 +31,7 @@ export default function TeacherDashboard() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Total quizzes" value={overview?.quizCount ?? 0} icon={<BookOpenCheck className="h-5 w-5" />} accent="brand" />
         <StatCard label="Question bank" value={overview?.questionCount ?? 0} icon={<Library className="h-5 w-5" />} accent="accent" />
         <StatCard label="Classes taught" value={overview?.classCount ?? 0} icon={<Users className="h-5 w-5" />} accent="amber" />

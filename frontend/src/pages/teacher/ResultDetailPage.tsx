@@ -49,7 +49,7 @@ export default function ResultDetailPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
         <StatCard label="Score" value={`${result.score}/${result.totalMarks}`} />
         <StatCard label="Percentage" value={formatPercent(result.percentage)} />
         <StatCard label="Grade" value={result.grade ? <GradeBadge grade={result.grade} passed={(result.percentage ?? 0) >= result.quiz.passingScore} /> : "—"} />

@@ -23,7 +23,7 @@ export default function PerformancePage() {
         <p className="mt-1 text-sm text-ink-500">A breakdown of how you're doing across subjects and quizzes.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Overall average" value={formatPercent(p.overallAverage)} icon={<TrendingUp className="h-5 w-5" />} accent="brand" />
         <StatCard label="Best score" value={formatPercent(p.bestScore)} icon={<Award className="h-5 w-5" />} accent="accent" />
         <StatCard label="Quizzes completed" value={p.attemptsCount} icon={<Target className="h-5 w-5" />} accent="amber" />

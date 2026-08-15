@@ -25,7 +25,7 @@ export default function AnalyticsPage() {
         <p className="mt-1 text-sm text-ink-500">Deeper insight into performance across the school.</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
         <StatCard label="Total attempts" value={totals.totalAttempts} />
         <StatCard label="Average score" value={formatPercent(totals.averageSchoolScore)} accent="brand" />
         <StatCard label="Pass rate" value={formatPercent(totals.overallPassRate)} accent="accent" />
