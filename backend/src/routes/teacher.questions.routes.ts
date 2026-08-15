@@ -1,0 +1,189 @@
+import { Router } from "express";
+import { z } from "zod";
+import { Difficulty, Role } from "@prisma/client";
+import { prisma } from "../lib/prisma";
+import { authenticate, requireRole } from "../middleware/auth";
+import { validateBody, validateQuery } from "../middleware/validate";
+import { asyncHandler } from "../utils/asyncHandler";
+import { HttpError } from "../middleware/errorHandler";
+import { recordAudit } from "../lib/audit";
+import { requireTeacherProfileId } from "../utils/context";
+import { paginationMeta, paginationSchema } from "../utils/pagination";
+
+const router = Router();
+router.use(authenticate, requireRole(Role.TEACHER));
+
+const listQuerySchema = paginationSchema.extend({
+  subjectId: z.string().optional(),
+  classId: z.string().optional(),
+  topic: z.string().optional(),
+  difficulty: z.nativeEnum(Difficulty).optional(),
+  search: z.string().optional(),
+});
+
+router.get(
+  "/",
+  validateQuery(listQuerySchema),
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const { page, pageSize, subjectId, classId, topic, difficulty, search } = req.query as unknown as z.infer<
+      typeof listQuerySchema
+    >;
+
+    const where: any = {
+      teacherId,
+      ...(subjectId ? { subjectId } : {}),
+      ...(classId ? { classId } : {}),
+      ...(topic ? { topic: { contains: topic, mode: "insensitive" } } : {}),
+      ...(difficulty ? { difficulty } : {}),
+      ...(search ? { text: { contains: search, mode: "insensitive" } } : {}),
+    };
+
+    const [total, questions] = await Promise.all([
+      prisma.question.count({ where }),
+      prisma.question.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: { options: { orderBy: { order: "asc" } }, subject: true, class: true },
+      }),
+    ]);
+
+    res.json({ data: questions, meta: paginationMeta(total, page, pageSize) });
+  })
+);
+
+router.get(
+  "/topics",
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const rows = await prisma.question.findMany({
+      where: { teacherId },
+      select: { topic: true },
+      distinct: ["topic"],
+    });
+    res.json({ data: rows.map((r) => r.topic) });
+  })
+);
+
+router.get(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const question = await prisma.question.findFirst({
+      where: { id: req.params.id, teacherId },
+      include: { options: { orderBy: { order: "asc" } }, subject: true, class: true },
+    });
+    if (!question) throw new HttpError(404, "Question not found");
+    res.json({ data: question });
+  })
+);
+
+const optionSchema = z.object({
+  text: z.string().min(1),
+  isCorrect: z.boolean(),
+});
+
+const questionSchema = z.object({
+  subjectId: z.string(),
+  classId: z.string().optional(),
+  topic: z.string().min(1),
+  text: z.string().min(3),
+  difficulty: z.nativeEnum(Difficulty).default(Difficulty.MEDIUM),
+  marks: z.number().int().min(1).default(1),
+  explanation: z.string().optional(),
+  options: z.array(optionSchema).min(2).max(6),
+});
+
+function assertExactlyOneCorrect(options: { isCorrect: boolean }[]) {
+  const correctCount = options.filter((o) => o.isCorrect).length;
+  if (correctCount !== 1) {
+    throw new HttpError(400, "Exactly one option must be marked as correct");
+  }
+}
+
+router.post(
+  "/",
+  validateBody(questionSchema),
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const { options, ...rest } = req.body;
+    assertExactlyOneCorrect(options);
+
+    const question = await prisma.question.create({
+      data: {
+        ...rest,
+        teacherId,
+        options: { create: options.map((o: any, i: number) => ({ ...o, order: i })) },
+      },
+      include: { options: { orderBy: { order: "asc" } } },
+    });
+
+    await recordAudit({ actorId: req.user!.sub, action: "QUESTION_CREATED", entityType: "Question", entityId: question.id, req });
+
+    res.status(201).json({ data: question });
+  })
+);
+
+const updateQuestionSchema = z.object({
+  subjectId: z.string().optional(),
+  classId: z.string().optional(),
+  topic: z.string().min(1).optional(),
+  text: z.string().min(3).optional(),
+  difficulty: z.nativeEnum(Difficulty).optional(),
+  marks: z.number().int().min(1).optional(),
+  explanation: z.string().optional(),
+  options: z.array(optionSchema).min(2).max(6).optional(),
+});
+
+router.patch(
+  "/:id",
+  validateBody(updateQuestionSchema),
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const existing = await prisma.question.findFirst({ where: { id: req.params.id, teacherId } });
+    if (!existing) throw new HttpError(404, "Question not found");
+
+    const { options, ...rest } = req.body;
+    if (options) assertExactlyOneCorrect(options);
+
+    const question = await prisma.$transaction(async (tx) => {
+      await tx.question.update({ where: { id: existing.id }, data: rest });
+      if (options) {
+        await tx.questionOption.deleteMany({ where: { questionId: existing.id } });
+        await tx.questionOption.createMany({
+          data: options.map((o: any, i: number) => ({ ...o, questionId: existing.id, order: i })),
+        });
+      }
+      return tx.question.findUnique({
+        where: { id: existing.id },
+        include: { options: { orderBy: { order: "asc" } } },
+      });
+    });
+
+    await recordAudit({ actorId: req.user!.sub, action: "QUESTION_UPDATED", entityType: "Question", entityId: existing.id, req });
+
+    res.json({ data: question });
+  })
+);
+
+router.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const existing = await prisma.question.findFirst({ where: { id: req.params.id, teacherId } });
+    if (!existing) throw new HttpError(404, "Question not found");
+
+    const usedInQuiz = await prisma.quizQuestion.findFirst({ where: { questionId: existing.id } });
+    if (usedInQuiz) {
+      throw new HttpError(400, "This question is used in a quiz and cannot be deleted. Remove it from the quiz first.");
+    }
+
+    await prisma.question.delete({ where: { id: existing.id } });
+    await recordAudit({ actorId: req.user!.sub, action: "QUESTION_DELETED", entityType: "Question", entityId: existing.id, req });
+    res.status(204).send();
+  })
+);
+
+export default router;

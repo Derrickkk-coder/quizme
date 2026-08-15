@@ -1,0 +1,351 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ──────────────────────────────────────────────────────────────
+
+enum Role {
+  STUDENT
+  TEACHER
+  ADMIN
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum QuizStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  CLOSED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+}
+
+enum NotificationType {
+  QUIZ_ASSIGNED
+  QUIZ_STARTING_SOON
+  QUIZ_DEADLINE
+  RESULT_AVAILABLE
+  FEEDBACK
+  SUBMISSION
+  ANNOUNCEMENT
+  SYSTEM
+}
+
+// ─── Identity ───────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid()) @map("_id")
+  email        String    @unique
+  passwordHash String
+  name         String
+  role         Role
+  isActive     Boolean   @default(true)
+  mustResetPassword Boolean @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  studentProfile StudentProfile?
+  teacherProfile TeacherProfile?
+
+  notifications  Notification[]
+  auditLogs      AuditLog[]        @relation("AuditActor")
+
+  @@map("users")
+}
+
+model StudentProfile {
+  id         String   @id @default(cuid()) @map("_id")
+  userId     String   @unique
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  studentCode String  @unique
+  classId    String?
+  class      Class?   @relation(fields: [classId], references: [id])
+  createdAt  DateTime @default(now())
+
+  attempts   QuizAttempt[]
+
+  @@map("student_profiles")
+}
+
+model TeacherProfile {
+  id          String   @id @default(cuid()) @map("_id")
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  staffCode   String   @unique
+  createdAt   DateTime @default(now())
+
+  assignments TeacherClassSubject[]
+  questions   Question[]
+  quizzes     Quiz[]
+
+  @@map("teacher_profiles")
+}
+
+// ─── School structure ──────────────────────────────────────────────────
+
+model Class {
+  id        String   @id @default(cuid()) @map("_id")
+  name      String   @unique
+  level     String?
+  createdAt DateTime @default(now())
+
+  students    StudentProfile[]
+  assignments TeacherClassSubject[]
+  quizzes     Quiz[]
+  questions   Question[]
+
+  @@map("classes")
+}
+
+model Subject {
+  id        String   @id @default(cuid()) @map("_id")
+  name      String   @unique
+  code      String?
+  createdAt DateTime @default(now())
+
+  assignments TeacherClassSubject[]
+  quizzes     Quiz[]
+  questions   Question[]
+
+  @@map("subjects")
+}
+
+model TeacherClassSubject {
+  id        String   @id @default(cuid()) @map("_id")
+  teacherId String
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([teacherId, classId, subjectId])
+  @@map("teacher_class_subjects")
+}
+
+model AcademicYear {
+  id        String   @id @default(cuid()) @map("_id")
+  name      String   @unique
+  startDate DateTime
+  endDate   DateTime
+  isCurrent Boolean  @default(false)
+
+  terms Term[]
+
+  @@map("academic_years")
+}
+
+model Term {
+  id             String   @id @default(cuid()) @map("_id")
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id], onDelete: Cascade)
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  isCurrent      Boolean  @default(false)
+
+  quizzes Quiz[]
+
+  @@unique([academicYearId, name])
+  @@map("terms")
+}
+
+// ─── Question bank ──────────────────────────────────────────────────────
+
+model Question {
+  id           String     @id @default(cuid()) @map("_id")
+  teacherId    String
+  teacher      TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subjectId    String
+  subject      Subject    @relation(fields: [subjectId], references: [id])
+  classId      String?
+  class        Class?     @relation(fields: [classId], references: [id])
+  topic        String
+  text         String
+  difficulty   Difficulty @default(MEDIUM)
+  marks        Int        @default(1)
+  explanation  String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  options      QuestionOption[]
+  quizQuestions QuizQuestion[]
+  answers      Answer[]
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         String   @id @default(cuid()) @map("_id")
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  text       String
+  isCorrect  Boolean  @default(false)
+  order      Int
+
+  @@map("question_options")
+}
+
+// ─── Quizzes ────────────────────────────────────────────────────────────
+
+model Quiz {
+  id                     String     @id @default(cuid()) @map("_id")
+  title                  String
+  description            String?
+  instructions           String?
+  subjectId              String
+  subject                Subject    @relation(fields: [subjectId], references: [id])
+  classId                String
+  class                  Class      @relation(fields: [classId], references: [id])
+  teacherId              String
+  teacher                TeacherProfile @relation(fields: [teacherId], references: [id])
+  termId                 String?
+  term                   Term?      @relation(fields: [termId], references: [id])
+
+  durationMinutes        Int
+  passingScore           Int        @default(50)
+  difficulty             Difficulty @default(MEDIUM)
+
+  opensAt                DateTime?
+  closesAt               DateTime?
+  maxAttempts            Int        @default(1)
+
+  randomizeQuestions     Boolean    @default(true)
+  randomizeOptions       Boolean    @default(true)
+  showCorrectAnswers     Boolean    @default(true)
+  showExplanations       Boolean    @default(true)
+  showResultsImmediately Boolean    @default(true)
+
+  status                 QuizStatus @default(DRAFT)
+
+  createdAt              DateTime   @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String   @id @default(cuid()) @map("_id")
+  quizId        String
+  quiz          Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question @relation(fields: [questionId], references: [id])
+  order         Int
+  marksOverride Int?
+
+  @@unique([quizId, questionId])
+  @@map("quiz_questions")
+}
+
+// ─── Attempts / results ─────────────────────────────────────────────────
+
+model QuizAttempt {
+  id            String        @id @default(cuid()) @map("_id")
+  quizId        String
+  quiz          Quiz          @relation(fields: [quizId], references: [id])
+  studentId     String
+  student       StudentProfile @relation(fields: [studentId], references: [id])
+  attemptNumber Int
+
+  startedAt     DateTime      @default(now())
+  deadlineAt    DateTime
+  submittedAt   DateTime?
+  status        AttemptStatus @default(IN_PROGRESS)
+
+  // Snapshot of the randomized question order and per-question option order
+  // handed to the student, so grading and re-render are consistent and
+  // cannot be manipulated from the client.
+  questionOrder Json
+
+  score         Int?
+  totalMarks    Int?
+  percentage    Float?
+  grade         String?
+
+  tabSwitchCount Int          @default(0)
+  teacherFeedback String?
+
+  answers       Answer[]
+
+  @@unique([quizId, studentId, attemptNumber])
+  @@map("quiz_attempts")
+}
+
+model Answer {
+  id               String      @id @default(cuid()) @map("_id")
+  attemptId        String
+  attempt          QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId       String
+  question         Question    @relation(fields: [questionId], references: [id])
+  selectedOptionId String?
+  isCorrect        Boolean?
+  marksAwarded     Int?
+  answeredAt       DateTime    @updatedAt
+
+  @@unique([attemptId, questionId])
+  @@map("answers")
+}
+
+// ─── Grading ────────────────────────────────────────────────────────────
+
+model GradeBand {
+  id        String @id @default(cuid()) @map("_id")
+  grade     String
+  minPercent Int
+  maxPercent Int
+  label     String?
+
+  @@map("grade_bands")
+}
+
+// ─── Notifications ──────────────────────────────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid()) @map("_id")
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+// ─── Audit log ──────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid()) @map("_id")
+  actorId    String?
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id])
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("audit_logs")
+}
