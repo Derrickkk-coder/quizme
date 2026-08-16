@@ -114,14 +114,24 @@ export async function generateQuestionsFromNotes(params: GenerateQuestionsParams
     .filter(Boolean)
     .join("\n\n");
 
-  const MAX_ATTEMPTS = 3;
+  // Try the newest model first, then fall back to an older (usually less
+  // congested) one if it's overloaded — each with one immediate try and one
+  // retry after a short delay.
+  const attemptPlan = [
+    { model: "gemini-3.7-flash", delayMs: 0 },
+    { model: "gemini-3.7-flash", delayMs: 1500 },
+    { model: "gemini-2.5-flash", delayMs: 0 },
+    { model: "gemini-2.5-flash", delayMs: 1500 },
+  ];
+
   let response: Awaited<ReturnType<GoogleGenAIType["models"]["generateContent"]>> | undefined;
   let lastErr: unknown;
 
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (const { model, delayMs } of attemptPlan) {
+    if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
     try {
       response = await ai.models.generateContent({
-        model: "gemini-3.7-flash",
+        model,
         contents: prompt,
         config: {
           systemInstruction:
@@ -134,9 +144,7 @@ export async function generateQuestionsFromNotes(params: GenerateQuestionsParams
       break;
     } catch (err) {
       lastErr = err;
-      const retryable = await isRetryableApiError(err);
-      if (!retryable || attempt === MAX_ATTEMPTS) break;
-      await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+      if (!(await isRetryableApiError(err))) break;
     }
   }
 
