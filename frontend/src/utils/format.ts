@@ -1,4 +1,5 @@
-export function timeAgo(dateStr: string): string {
+export function timeAgo(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
   const date = new Date(dateStr);
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
   if (seconds < 60) return "Just now";

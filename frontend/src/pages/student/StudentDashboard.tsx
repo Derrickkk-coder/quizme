@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { BookOpenCheck, CheckCircle2, TrendingUp, Bell, ArrowRight, Clock } from "lucide-react";
+import { BookOpenCheck, CheckCircle2, TrendingUp, Bell, ArrowRight, Clock, GraduationCap } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { getStudentQuizzes } from "../../api/student";
 import { getStudentPerformanceSummary } from "../../api/student";
@@ -12,7 +12,9 @@ import { PageLoader } from "../../components/ui/Spinner";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { SubjectBarChart } from "../../components/charts/SubjectBarChart";
 import { GradeBadge } from "../../components/ui/StatusBadge";
-import { formatDate, formatDateTime, formatPercent, timeAgo } from "../../utils/format";
+import { DashboardHero } from "../../components/dashboard/DashboardHero";
+import { ActivityRow } from "../../components/dashboard/ActivityRow";
+import { formatDateTime, formatPercent, timeAgo } from "../../utils/format";
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -26,16 +28,21 @@ export default function StudentDashboard() {
 
   const quizzes = quizzesQuery.data;
   const performance = performanceQuery.data?.data;
+  const availableCount = quizzes?.available.length ?? 0;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-ink-900">Welcome back, {user?.name.split(" ")[0]} 👋</h1>
-        <p className="mt-1 text-sm text-ink-500">
-          {user?.studentProfile?.class?.name ? `${user.studentProfile.class.name} · ` : ""}
-          Here's what's happening with your quizzes today.
-        </p>
-      </div>
+      <DashboardHero
+        eyebrow={user?.studentProfile?.class?.name ?? "Student"}
+        name={user?.name ?? ""}
+        subtitle={
+          availableCount > 0
+            ? `You have ${availableCount} quiz${availableCount === 1 ? "" : "zes"} ready to take.`
+            : "You're all caught up — check back soon for new quizzes."
+        }
+        icon={<GraduationCap className="h-10 w-10" />}
+        cta={{ label: "Take a quiz", to: "/app/student/quizzes", icon: <ArrowRight className="h-4 w-4" /> }}
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard label="Available quizzes" value={quizzes?.available.length ?? 0} icon={<BookOpenCheck className="h-5 w-5" />} accent="brand" />
@@ -54,34 +61,23 @@ export default function StudentDashboard() {
             {!resultsQuery.data?.data.length ? (
               <EmptyState title="No results yet" description="Take a quiz to see your results here." />
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-ink-100 text-left text-xs uppercase tracking-wide text-ink-400">
-                      <th className="pb-2">Quiz</th>
-                      <th className="pb-2">Subject</th>
-                      <th className="pb-2">Score</th>
-                      <th className="pb-2">Grade</th>
-                      <th className="pb-2">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resultsQuery.data.data.map((r) => (
-                      <tr key={r.id} className="border-b border-ink-50 last:border-0">
-                        <td className="py-2.5 font-medium text-ink-800">
-                          <Link to={`/app/student/results/${r.id}`} className="hover:text-brand-600">
-                            {r.quiz.title}
-                          </Link>
-                        </td>
-                        <td className="py-2.5 text-ink-500">{r.quiz.subject.name}</td>
-                        <td className="py-2.5 text-ink-600">{formatPercent(r.percentage)}</td>
-                        <td className="py-2.5">{r.grade && <GradeBadge grade={r.grade} passed={(r.percentage ?? 0) >= r.quiz.passingScore} />}</td>
-                        <td className="py-2.5 text-ink-400">{formatDate(r.submittedAt)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <ul className="space-y-2">
+                {resultsQuery.data.data.map((r) => {
+                  const passed = (r.percentage ?? 0) >= r.quiz.passingScore;
+                  return (
+                    <ActivityRow
+                      key={r.id}
+                      to={`/app/student/results/${r.id}`}
+                      icon={<CheckCircle2 className="h-4 w-4" />}
+                      iconClassName={passed ? "bg-emerald-50 text-emerald-600" : "bg-red-50 text-red-600"}
+                      title={r.quiz.title}
+                      subtitle={`${r.quiz.subject.name} · ${formatPercent(r.percentage)}`}
+                      meta={r.grade && <GradeBadge grade={r.grade} passed={passed} />}
+                      timestamp={timeAgo(r.submittedAt)}
+                    />
+                  );
+                })}
+              </ul>
             )}
           </SectionCard>
         </div>
@@ -91,15 +87,16 @@ export default function StudentDashboard() {
             {!quizzes?.upcoming.length ? (
               <EmptyState title="Nothing scheduled" description="Upcoming quizzes will show up here." />
             ) : (
-              <ul className="space-y-3">
+              <ul className="space-y-2">
                 {quizzes.upcoming.slice(0, 4).map((q) => (
-                  <li key={q.id} className="flex items-start gap-3 rounded-xl border border-ink-100 p-3">
-                    <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium text-ink-800">{q.title}</p>
-                      <p className="text-xs text-ink-400">Opens {formatDateTime(q.opensAt)}</p>
-                    </div>
-                  </li>
+                  <ActivityRow
+                    key={q.id}
+                    icon={<Clock className="h-4 w-4" />}
+                    iconClassName="bg-amber-50 text-amber-600"
+                    title={q.title}
+                    subtitle={q.subject.name}
+                    timestamp={`Opens ${formatDateTime(q.opensAt)}`}
+                  />
                 ))}
               </ul>
             )}
@@ -123,19 +120,6 @@ export default function StudentDashboard() {
               </ul>
             )}
           </SectionCard>
-
-          {!!quizzes?.available.length && (
-            <Link
-              to="/app/student/quizzes"
-              className="flex items-center justify-between rounded-2xl bg-brand-600 p-5 text-white shadow-sm transition-colors hover:bg-brand-700"
-            >
-              <div>
-                <p className="font-semibold">{quizzes.available.length} quiz{quizzes.available.length > 1 ? "zes" : ""} ready</p>
-                <p className="text-sm text-brand-100">Jump back in and take a quiz now.</p>
-              </div>
-              <ArrowRight className="h-5 w-5" />
-            </Link>
-          )}
         </div>
       </div>
     </div>
