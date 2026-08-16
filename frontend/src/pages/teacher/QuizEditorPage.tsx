@@ -1,7 +1,25 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { GripVertical, Plus, Sparkles, Trash2, Send, XCircle } from "lucide-react";
+import {
+  BookOpen,
+  Calendar,
+  Check,
+  ClipboardList,
+  Eye,
+  GripVertical,
+  Layers,
+  ListChecks,
+  Plus,
+  Save,
+  Send,
+  Settings2,
+  Shuffle,
+  Sparkles,
+  Timer,
+  Trash2,
+  XCircle,
+} from "lucide-react";
 import {
   addQuestionsToQuiz,
   autoGenerateQuizQuestions,
@@ -143,13 +161,19 @@ export default function QuizEditorPage() {
   if (isEditing && quizQuery.isLoading) return <PageLoader />;
 
   const quiz = quizQuery.data?.data;
+  const totalMarks = quiz?.questions.reduce((sum, qq) => sum + (qq.marksOverride ?? qq.question.marks), 0) ?? 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-ink-900">{isEditing ? "Edit Quiz" : "Create Quiz"}</h1>
-          <p className="mt-1 text-sm text-ink-500">Configure quiz details, timing, and questions.</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm shadow-brand-200">
+            <ClipboardList className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-ink-900">{isEditing ? "Edit Quiz" : "Create Quiz"}</h1>
+            <p className="mt-0.5 text-sm text-ink-500">Configure quiz details, timing, and questions.</p>
+          </div>
         </div>
         {quiz && (
           <div className="flex items-center gap-2">
@@ -168,101 +192,168 @@ export default function QuizEditorPage() {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="card space-y-4 p-6 lg:col-span-2">
-          <h2 className="text-base font-semibold text-ink-900">Quiz details</h2>
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:items-start">
+        <div className="card divide-y divide-ink-100 lg:col-span-2">
+          <FieldSection icon={<BookOpen className="h-4 w-4" />} title="Basics" description="What students will see before they start.">
+            <div>
+              <label className="label">Title</label>
+              <input required className="input" placeholder="e.g. Mid-term Algebra Quiz" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
+            </div>
+            <div>
+              <label className="label">Description</label>
+              <textarea className="textarea" placeholder="A short summary shown on the quiz list" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div>
+              <label className="label">Instructions for students</label>
+              <textarea className="textarea" placeholder="Shown at the top of the quiz once students start" value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
+            </div>
+          </FieldSection>
 
-          <div>
-            <label className="label">Title</label>
-            <input required className="input" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
-          </div>
-          <div>
-            <label className="label">Description</label>
-            <textarea className="textarea" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
-          </div>
-          <div>
-            <label className="label">Instructions for students</label>
-            <textarea className="textarea" value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
-          </div>
+          <FieldSection icon={<Layers className="h-4 w-4" />} title="Classification" description="Where this quiz lives in your subject and class.">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="label">Subject</label>
+                <select required className="select" value={form.subjectId} onChange={(e) => setForm({ ...form, subjectId: e.target.value })}>
+                  <option value="">Select subject</option>
+                  {subjectsQuery.data?.data.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Class</label>
+                <select required className="select" value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })}>
+                  <option value="">Select class</option>
+                  {classesQuery.data?.data.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="label">Difficulty</label>
+                <select className="select" value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value as Difficulty })}>
+                  <option value="EASY">Easy</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HARD">Hard</option>
+                </select>
+              </div>
+            </div>
+          </FieldSection>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="label">Subject</label>
-              <select required className="select" value={form.subjectId} onChange={(e) => setForm({ ...form, subjectId: e.target.value })}>
-                <option value="">Select subject</option>
-                {subjectsQuery.data?.data.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+          <FieldSection icon={<Timer className="h-4 w-4" />} title="Timing & attempts" description="How long students get, and when the quiz is open.">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label className="label">Duration (minutes)</label>
+                <input type="number" min={1} required className="input" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="label">Passing score (%)</label>
+                <input type="number" min={0} max={100} required className="input" value={form.passingScore} onChange={(e) => setForm({ ...form, passingScore: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="label">Max attempts</label>
+                <input type="number" min={1} required className="input" value={form.maxAttempts} onChange={(e) => setForm({ ...form, maxAttempts: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="label flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-ink-400" /> Opens at
+                </label>
+                <input type="datetime-local" className="input" value={form.opensAt ?? ""} onChange={(e) => setForm({ ...form, opensAt: e.target.value })} />
+              </div>
+              <div>
+                <label className="label flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 text-ink-400" /> Closes at
+                </label>
+                <input type="datetime-local" className="input" value={form.closesAt ?? ""} onChange={(e) => setForm({ ...form, closesAt: e.target.value })} />
+              </div>
             </div>
-            <div>
-              <label className="label">Class</label>
-              <select required className="select" value={form.classId} onChange={(e) => setForm({ ...form, classId: e.target.value })}>
-                <option value="">Select class</option>
-                {classesQuery.data?.data.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="label">Difficulty</label>
-              <select className="select" value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value as Difficulty })}>
-                <option value="EASY">Easy</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HARD">Hard</option>
-              </select>
-            </div>
-            <div>
-              <label className="label">Duration (minutes)</label>
-              <input type="number" min={1} required className="input" value={form.durationMinutes} onChange={(e) => setForm({ ...form, durationMinutes: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="label">Passing score (%)</label>
-              <input type="number" min={0} max={100} required className="input" value={form.passingScore} onChange={(e) => setForm({ ...form, passingScore: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="label">Max attempts</label>
-              <input type="number" min={1} required className="input" value={form.maxAttempts} onChange={(e) => setForm({ ...form, maxAttempts: Number(e.target.value) })} />
-            </div>
-            <div>
-              <label className="label">Opens at</label>
-              <input type="datetime-local" className="input" value={form.opensAt ?? ""} onChange={(e) => setForm({ ...form, opensAt: e.target.value })} />
-            </div>
-            <div>
-              <label className="label">Closes at</label>
-              <input type="datetime-local" className="input" value={form.closesAt ?? ""} onChange={(e) => setForm({ ...form, closesAt: e.target.value })} />
-            </div>
-          </div>
+          </FieldSection>
 
-          <div className="space-y-2 border-t border-ink-100 pt-4">
-            <ToggleRow label="Randomize question order" checked={form.randomizeQuestions} onChange={(v) => setForm({ ...form, randomizeQuestions: v })} />
-            <ToggleRow label="Randomize answer options" checked={form.randomizeOptions} onChange={(v) => setForm({ ...form, randomizeOptions: v })} />
-            <ToggleRow label="Show correct answers after submission" checked={form.showCorrectAnswers} onChange={(v) => setForm({ ...form, showCorrectAnswers: v })} />
-            <ToggleRow label="Show explanations" checked={form.showExplanations} onChange={(v) => setForm({ ...form, showExplanations: v })} />
-            <ToggleRow label="Show results immediately after submission" checked={form.showResultsImmediately} onChange={(v) => setForm({ ...form, showResultsImmediately: v })} />
-          </div>
+          <FieldSection icon={<Settings2 className="h-4 w-4" />} title="Student experience" description="Control what students see and how questions are ordered.">
+            <div className="space-y-1">
+              <SwitchRow
+                icon={<Shuffle className="h-4 w-4" />}
+                label="Randomize question order"
+                description="Each student sees questions in a different order"
+                checked={form.randomizeQuestions}
+                onChange={(v) => setForm({ ...form, randomizeQuestions: v })}
+              />
+              <SwitchRow
+                icon={<Shuffle className="h-4 w-4" />}
+                label="Randomize answer options"
+                description="Each student sees answer choices shuffled"
+                checked={form.randomizeOptions}
+                onChange={(v) => setForm({ ...form, randomizeOptions: v })}
+              />
+              <SwitchRow
+                icon={<Eye className="h-4 w-4" />}
+                label="Show correct answers after submission"
+                description="Reveal which option was right once a student submits"
+                checked={form.showCorrectAnswers}
+                onChange={(v) => setForm({ ...form, showCorrectAnswers: v })}
+              />
+              <SwitchRow
+                icon={<ListChecks className="h-4 w-4" />}
+                label="Show explanations"
+                description="Only applies if correct answers are shown"
+                checked={form.showExplanations}
+                onChange={(v) => setForm({ ...form, showExplanations: v })}
+              />
+              <SwitchRow
+                icon={<Check className="h-4 w-4" />}
+                label="Show results immediately after submission"
+                description="Otherwise students wait until you release results"
+                checked={form.showResultsImmediately}
+                onChange={(v) => setForm({ ...form, showResultsImmediately: v })}
+              />
+            </div>
+          </FieldSection>
 
-          <button type="submit" className="btn-primary" disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? "Saving…" : isEditing ? "Save changes" : "Create Quiz"}
-          </button>
+          <div className="p-5">
+            <button type="submit" className="btn-primary w-full sm:w-auto" disabled={saveMutation.isPending}>
+              <Save className="h-4 w-4" /> {saveMutation.isPending ? "Saving…" : isEditing ? "Save changes" : "Create Quiz"}
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-4">
-          <div className="card p-6">
+        <div className="lg:sticky lg:top-6">
+          <div className="card p-5">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-base font-semibold text-ink-900">Questions {quiz ? `(${quiz.questions.length})` : ""}</h2>
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
+                  <ListChecks className="h-4 w-4" />
+                </div>
+                <h2 className="text-base font-semibold text-ink-900">Questions</h2>
+              </div>
+              {quiz && quiz.questions.length > 0 && (
+                <span className="badge-brand">{quiz.questions.length} · {totalMarks} mark{totalMarks === 1 ? "" : "s"}</span>
+              )}
             </div>
 
             {!isEditing ? (
-              <EmptyState title="Save the quiz first" description="Create the quiz to start adding questions." />
+              <EmptyState icon={<Save className="h-6 w-6" />} title="Save the quiz first" description="Create the quiz to start adding questions." />
             ) : (
               <>
-                <div className="mb-4 flex gap-2">
-                  <button type="button" className="btn-secondary btn-sm flex-1" onClick={() => setPickerOpen(true)}>
-                    <Plus className="h-4 w-4" /> Add from bank
+                <div className="mb-4 grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    className="flex flex-col items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-3 text-center transition-colors hover:border-brand-300 hover:bg-brand-50"
+                    onClick={() => setPickerOpen(true)}
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+                      <Plus className="h-4 w-4" />
+                    </span>
+                    <span className="text-xs font-semibold text-ink-700">Add from bank</span>
                   </button>
-                  <button type="button" className="btn-secondary btn-sm flex-1" onClick={() => setAutoGenOpen(true)}>
-                    <Sparkles className="h-4 w-4" /> Auto-generate
+                  <button
+                    type="button"
+                    className="flex flex-col items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-3 text-center transition-colors hover:border-accent-300 hover:bg-accent-50"
+                    onClick={() => setAutoGenOpen(true)}
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600">
+                      <Sparkles className="h-4 w-4" />
+                    </span>
+                    <span className="text-xs font-semibold text-ink-700">Auto-generate</span>
                   </button>
                 </div>
 
@@ -270,23 +361,27 @@ export default function QuizEditorPage() {
                   <EmptyState title="No questions yet" description="Add questions from your bank or auto-generate a set." />
                 ) : (
                   <ul className="space-y-2">
-                    {quiz.questions.map((qq) => (
-                      <li key={qq.id} className="flex items-start gap-2 rounded-lg border border-ink-100 p-3">
-                        <GripVertical className="mt-0.5 h-4 w-4 shrink-0 text-ink-300" />
+                    {quiz.questions.map((qq, i) => (
+                      <li key={qq.id} className="group flex items-start gap-2.5 rounded-xl border border-ink-100 p-3 transition-colors hover:border-ink-200 hover:bg-ink-50/60">
+                        <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink-100 text-[10px] font-bold text-ink-500">
+                          {i + 1}
+                        </span>
                         <div className="min-w-0 flex-1">
                           <p className="line-clamp-2 text-sm text-ink-800">{qq.question.text}</p>
-                          <div className="mt-1 flex items-center gap-2">
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                             <DifficultyBadge difficulty={qq.question.difficulty} />
                             <span className="text-xs text-ink-400">{qq.question.topic}</span>
                           </div>
                         </div>
                         <button
                           type="button"
-                          className="btn-ghost btn-sm text-red-600"
+                          className="shrink-0 rounded-lg p-1.5 text-ink-300 opacity-0 transition-all hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
                           onClick={() => removeQuestionMutation.mutate(qq.id)}
+                          title="Remove question"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        <GripVertical className="mt-0.5 h-4 w-4 shrink-0 cursor-grab text-ink-200" />
                       </li>
                     ))}
                   </ul>
@@ -313,11 +408,54 @@ export default function QuizEditorPage() {
   );
 }
 
-function ToggleRow({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+function FieldSection({ icon, title, description, children }: { icon: ReactNode; title: string; description?: string; children: ReactNode }) {
   return (
-    <label className="flex cursor-pointer items-center justify-between py-1.5">
-      <span className="text-sm text-ink-700">{label}</span>
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="h-4 w-4 rounded border-ink-300 text-brand-600 focus:ring-brand-500" />
+    <div className="space-y-4 p-5">
+      <div className="flex items-center gap-2.5">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-600">{icon}</div>
+        <div>
+          <h2 className="text-sm font-semibold text-ink-900">{title}</h2>
+          {description && <p className="text-xs text-ink-400">{description}</p>}
+        </div>
+      </div>
+      <div className="space-y-4 sm:pl-[42px]">{children}</div>
+    </div>
+  );
+}
+
+function SwitchRow({
+  icon,
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  icon?: ReactNode;
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-4 rounded-xl px-2.5 py-2.5 transition-colors hover:bg-ink-50">
+      <div className="flex min-w-0 items-start gap-2.5">
+        {icon && <span className="mt-0.5 shrink-0 text-ink-400">{icon}</span>}
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-ink-700">{label}</p>
+          {description && <p className="text-xs text-ink-400">{description}</p>}
+        </div>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-200 ${
+          checked ? "bg-brand-600" : "bg-ink-200"
+        }`}
+      >
+        <span className={`inline-block h-[18px] w-[18px] transform rounded-full bg-white shadow transition-transform ${checked ? "translate-x-[22px]" : "translate-x-1"}`} />
+      </button>
     </label>
   );
 }
@@ -381,7 +519,7 @@ function QuestionPickerModal({
         {available.map((q) => {
           const checked = selected.has(q.id);
           return (
-            <label key={q.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${checked ? "border-brand-400 bg-brand-50" : "border-ink-100"}`}>
+            <label key={q.id} className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition-colors ${checked ? "border-brand-400 bg-brand-50" : "border-ink-100 hover:border-ink-200"}`}>
               <input
                 type="checkbox"
                 checked={checked}
