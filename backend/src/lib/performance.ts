@@ -2,6 +2,7 @@ import { AttemptStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { HttpError } from "../middleware/errorHandler";
 import { safeUserSelect } from "../utils/safeSelects";
+import { getOrderedGradeBands, matchGrade } from "./grade";
 
 const SUBMITTED = { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] };
 
@@ -155,6 +156,48 @@ export async function computeStudentPerformance(studentId: string, teacherId?: s
     percentage: a.percentage ?? 0,
   }));
 
+  // How the student's overall grade compares to their classmates'.
+  let gradeDistribution: { grade: string; count: number }[] = [];
+  let myGrade: string | null = null;
+
+  if (student.classId) {
+    const classmates = await prisma.studentProfile.findMany({
+      where: { classId: student.classId },
+      select: { id: true },
+    });
+    const classmateIds = classmates.map((c) => c.id);
+
+    const classAttempts = await prisma.quizAttempt.findMany({
+      where: {
+        studentId: { in: classmateIds },
+        status: SUBMITTED,
+        ...(teacherId ? { quiz: { teacherId } } : {}),
+      },
+      select: { studentId: true, percentage: true },
+    });
+
+    const percentagesByStudent = new Map<string, number[]>();
+    for (const a of classAttempts) {
+      const arr = percentagesByStudent.get(a.studentId) ?? [];
+      arr.push(a.percentage ?? 0);
+      percentagesByStudent.set(a.studentId, arr);
+    }
+
+    const bands = await getOrderedGradeBands();
+    const counts = new Map<string, number>(bands.map((b) => [b.grade, 0]));
+
+    for (const [sId, percs] of percentagesByStudent.entries()) {
+      // Only count classmates who've actually attempted something, so
+      // students with zero attempts don't pad out the lowest grade band.
+      const avg = percs.reduce((s, p) => s + p, 0) / percs.length;
+      const grade = matchGrade(avg, bands);
+      counts.set(grade, (counts.get(grade) ?? 0) + 1);
+      if (sId === studentId) myGrade = grade;
+    }
+
+    gradeDistribution = bands.map((b) => ({ grade: b.grade, count: counts.get(b.grade) ?? 0 }));
+  }
+
   return {
     student: { id: student.id, name: student.user.name, class: student.class?.name ?? null, studentCode: student.studentCode },
     overallAverage: Math.round(overallAverage * 10) / 10,
@@ -166,5 +209,7 @@ export async function computeStudentPerformance(studentId: string, teacherId?: s
     strengths: topicPerformance.slice(0, 3),
     weaknesses: [...topicPerformance].reverse().slice(0, 3),
     trend,
+    gradeDistribution,
+    myGrade,
   };
 }

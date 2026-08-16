@@ -7,6 +7,7 @@ import { SectionCard } from "../../components/ui/SectionCard";
 import { EmptyState } from "../../components/ui/EmptyState";
 import { SubjectBarChart } from "../../components/charts/SubjectBarChart";
 import { TrendLineChart } from "../../components/charts/TrendLineChart";
+import { GradeDistributionChart } from "../../components/charts/GradeDistributionChart";
 import { formatPercent } from "../../utils/format";
 
 export default function PerformancePage() {
@@ -38,6 +39,11 @@ export default function PerformancePage() {
           <TrendLineChart data={p.trend} />
         </SectionCard>
       </div>
+
+      <SectionCard title="Grades in your class">
+        <p className="mb-4 -mt-2 text-sm text-ink-500">How your overall grade compares to your classmates'.</p>
+        <GradeDistributionChart data={p.gradeDistribution} myGrade={p.myGrade} />
+      </SectionCard>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SectionCard title="Strengths">

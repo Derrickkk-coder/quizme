@@ -300,4 +300,6 @@ export interface StudentPerformance {
   strengths: { topic: string; correctRate: number }[];
   weaknesses: { topic: string; correctRate: number }[];
   trend: { quizTitle: string; date: string; percentage: number }[];
+  gradeDistribution: { grade: string; count: number }[];
+  myGrade: string | null;
 }
