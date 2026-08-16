@@ -1,6 +1,7 @@
 import { apiClient } from "./client";
 import { triggerBlobDownload } from "../utils/download";
 import {
+  AcademicYear,
   Difficulty,
   Paginated,
   Question,
@@ -29,6 +30,11 @@ export async function getTeacherSubjects(): Promise<{ data: Subject[] }> {
 
 export async function getTeacherStudents(classId?: string): Promise<{ data: (StudentProfile & { user: { name: string } })[] }> {
   const { data } = await apiClient.get("/teacher/students", { params: { classId } });
+  return data;
+}
+
+export async function getTeacherTerms(): Promise<{ data: AcademicYear[] }> {
+  const { data } = await apiClient.get("/teacher/terms");
   return data;
 }
 

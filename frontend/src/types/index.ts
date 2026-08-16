@@ -230,6 +230,24 @@ export interface GradeBand {
   label?: string | null;
 }
 
+export interface Term {
+  id: string;
+  academicYearId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+}
+
+export interface AcademicYear {
+  id: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  terms: Term[];
+}
+
 export interface PaginationMeta {
   total: number;
   page: number;

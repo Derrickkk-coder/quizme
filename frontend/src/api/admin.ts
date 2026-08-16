@@ -1,5 +1,6 @@
 import { apiClient } from "./client";
 import {
+  AcademicYear,
   AdminDashboardData,
   AuditLogEntry,
   GradeBand,
@@ -9,6 +10,7 @@ import {
   Role,
   SchoolClass,
   Subject,
+  Term,
   User,
 } from "../types";
 
@@ -141,6 +143,56 @@ export async function getGradeBands(): Promise<{ data: GradeBand[] }> {
 export async function saveGradeBands(bands: GradeBand[]): Promise<{ data: GradeBand[] }> {
   const { data } = await apiClient.put("/admin/settings/grade-bands", bands);
   return data;
+}
+
+// ─── Academic years & terms ──────────────────────────────────────────
+
+export async function listAcademicYears(): Promise<{ data: AcademicYear[] }> {
+  const { data } = await apiClient.get("/admin/settings/academic-years");
+  return data;
+}
+
+export interface AcademicYearPayload {
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent?: boolean;
+}
+
+export async function createAcademicYear(payload: AcademicYearPayload): Promise<{ data: AcademicYear }> {
+  const { data } = await apiClient.post("/admin/settings/academic-years", payload);
+  return data;
+}
+
+export async function updateAcademicYear(id: string, payload: Partial<AcademicYearPayload>): Promise<{ data: AcademicYear }> {
+  const { data } = await apiClient.patch(`/admin/settings/academic-years/${id}`, payload);
+  return data;
+}
+
+export async function deleteAcademicYear(id: string): Promise<void> {
+  await apiClient.delete(`/admin/settings/academic-years/${id}`);
+}
+
+export interface TermPayload {
+  academicYearId: string;
+  name: string;
+  startDate: string;
+  endDate: string;
+  isCurrent?: boolean;
+}
+
+export async function createTerm(payload: TermPayload): Promise<{ data: Term }> {
+  const { data } = await apiClient.post("/admin/settings/terms", payload);
+  return data;
+}
+
+export async function updateTerm(id: string, payload: Partial<Omit<TermPayload, "academicYearId">>): Promise<{ data: Term }> {
+  const { data } = await apiClient.patch(`/admin/settings/terms/${id}`, payload);
+  return data;
+}
+
+export async function deleteTerm(id: string): Promise<void> {
+  await apiClient.delete(`/admin/settings/terms/${id}`);
 }
 
 // ─── Audit logs ───────────────────────────────────────────────────────

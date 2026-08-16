@@ -33,6 +33,17 @@ router.get(
 );
 
 router.get(
+  "/terms",
+  asyncHandler(async (_req, res) => {
+    const years = await prisma.academicYear.findMany({
+      orderBy: { startDate: "desc" },
+      include: { terms: { orderBy: { startDate: "asc" } } },
+    });
+    res.json({ data: years });
+  })
+);
+
+router.get(
   "/students",
   asyncHandler(async (req, res) => {
     await requireTeacherProfileId(req);

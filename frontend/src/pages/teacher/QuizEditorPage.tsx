@@ -27,6 +27,7 @@ import {
   getTeacherClasses,
   getTeacherQuiz,
   getTeacherSubjects,
+  getTeacherTerms,
   listQuestions,
   publishQuiz,
   closeQuiz,
@@ -48,6 +49,7 @@ const emptyForm: QuizPayload = {
   instructions: "",
   subjectId: "",
   classId: "",
+  termId: "",
   durationMinutes: 20,
   passingScore: 50,
   difficulty: "MEDIUM",
@@ -79,6 +81,7 @@ export default function QuizEditorPage() {
 
   const subjectsQuery = useQuery({ queryKey: ["teacher", "subjects"], queryFn: getTeacherSubjects });
   const classesQuery = useQuery({ queryKey: ["teacher", "classes"], queryFn: getTeacherClasses });
+  const termsQuery = useQuery({ queryKey: ["teacher", "terms"], queryFn: getTeacherTerms });
   const quizQuery = useQuery({
     queryKey: ["teacher", "quiz", quizId],
     queryFn: () => getTeacherQuiz(quizId!),
@@ -94,6 +97,7 @@ export default function QuizEditorPage() {
         instructions: quiz.instructions ?? "",
         subjectId: quiz.subjectId,
         classId: quiz.classId,
+        termId: quiz.termId ?? "",
         durationMinutes: quiz.durationMinutes,
         passingScore: quiz.passingScore,
         difficulty: quiz.difficulty,
@@ -111,7 +115,7 @@ export default function QuizEditorPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = { ...form, opensAt: form.opensAt || undefined, closesAt: form.closesAt || undefined };
+      const payload = { ...form, termId: form.termId || undefined, opensAt: form.opensAt || undefined, closesAt: form.closesAt || undefined };
       if (isEditing) return updateQuiz(quizId!, payload);
       return createQuiz(payload);
     },
@@ -210,7 +214,7 @@ export default function QuizEditorPage() {
           </FieldSection>
 
           <FieldSection icon={<Layers className="h-4 w-4" />} title="Classification" description="Where this quiz lives in your subject and class.">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
                 <label className="label">Subject</label>
                 <select required className="select" value={form.subjectId} onChange={(e) => setForm({ ...form, subjectId: e.target.value })}>
@@ -235,6 +239,19 @@ export default function QuizEditorPage() {
                   <option value="EASY">Easy</option>
                   <option value="MEDIUM">Medium</option>
                   <option value="HARD">Hard</option>
+                </select>
+              </div>
+              <div>
+                <label className="label">Term (optional)</label>
+                <select className="select" value={form.termId ?? ""} onChange={(e) => setForm({ ...form, termId: e.target.value })}>
+                  <option value="">No term</option>
+                  {termsQuery.data?.data.map((year) => (
+                    <optgroup key={year.id} label={year.name}>
+                      {year.terms.map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
             </div>
