@@ -19,11 +19,16 @@ async function getClient(): Promise<GoogleGenAIType> {
   return client;
 }
 
-// Gemini returns HTTP 503 (model overloaded) or 429 (rate limited) for
-// transient load spikes — Google's own guidance is to retry these.
-async function isRetryableApiError(err: unknown): Promise<boolean> {
+// 503 (overloaded) and 429 (rate limited) are transient — worth retrying the
+// same model. 404 means this specific model isn't available to this API key
+// (e.g. deprecated for new projects) — retrying it is pointless, move on to
+// the next model in the chain instead. Anything else is not worth chasing.
+async function classifyGeminiError(err: unknown): Promise<"retry-same" | "next-model" | "fatal"> {
   const { ApiError } = await import("@google/genai");
-  return err instanceof ApiError && (err.status === 503 || err.status === 429);
+  if (!(err instanceof ApiError)) return "fatal";
+  if (err.status === 503 || err.status === 429) return "retry-same";
+  if (err.status === 404) return "next-model";
+  return "fatal";
 }
 
 // Mirrors the @google/genai `Type` enum values (plain strings, so this file
@@ -114,37 +119,37 @@ export async function generateQuestionsFromNotes(params: GenerateQuestionsParams
     .filter(Boolean)
     .join("\n\n");
 
-  // Try the newest model first, then fall back to an older (usually less
-  // congested) one if it's overloaded — each with one immediate try and one
-  // retry after a short delay.
-  const attemptPlan = [
-    { model: "gemini-3.7-flash", delayMs: 0 },
-    { model: "gemini-3.7-flash", delayMs: 1500 },
-    { model: "gemini-2.5-flash", delayMs: 0 },
-    { model: "gemini-2.5-flash", delayMs: 1500 },
-  ];
+  // Try progressively "smaller"/older models if a bigger one is overloaded
+  // or unavailable to this API key. Each model gets one immediate try and
+  // one retry after a short delay before moving to the next model.
+  const modelChain = ["gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"];
 
   let response: Awaited<ReturnType<GoogleGenAIType["models"]["generateContent"]>> | undefined;
   let lastErr: unknown;
 
-  for (const { model, delayMs } of attemptPlan) {
-    if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
-    try {
-      response = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          systemInstruction:
-            "You are an assistant that writes exam-quality multiple choice quiz questions for Junior High School (JHS) students, strictly grounded in the teacher's notes provided. Do not invent facts that are not supported by the notes. Keep language age-appropriate and unambiguous.",
-          responseMimeType: "application/json",
-          responseSchema,
-        },
-      });
-      lastErr = undefined;
-      break;
-    } catch (err) {
-      lastErr = err;
-      if (!(await isRetryableApiError(err))) break;
+  modelLoop: for (const model of modelChain) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, 1500));
+      try {
+        response = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            systemInstruction:
+              "You are an assistant that writes exam-quality multiple choice quiz questions for Junior High School (JHS) students, strictly grounded in the teacher's notes provided. Do not invent facts that are not supported by the notes. Keep language age-appropriate and unambiguous.",
+            responseMimeType: "application/json",
+            responseSchema,
+          },
+        });
+        lastErr = undefined;
+        break modelLoop;
+      } catch (err) {
+        lastErr = err;
+        const verdict = await classifyGeminiError(err);
+        if (verdict === "fatal") break modelLoop;
+        if (verdict === "next-model") break;
+        // "retry-same" falls through to the next attempt on this same model
+      }
     }
   }
 
