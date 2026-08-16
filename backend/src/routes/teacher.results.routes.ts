@@ -11,6 +11,7 @@ import { paginationMeta, paginationSchema } from "../utils/pagination";
 import { notify } from "../lib/notify";
 import { recordAudit } from "../lib/audit";
 import { toCsv } from "../utils/csv";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const router = Router();
 router.use(authenticate, requireRole(Role.TEACHER));
@@ -71,7 +72,7 @@ router.get(
       orderBy: { submittedAt: "desc" },
       include: {
         quiz: { include: { subject: true, class: true } },
-        student: { include: { user: true, class: true } },
+        student: { include: { user: { select: safeUserSelect }, class: true } },
       },
     });
 
@@ -118,7 +119,7 @@ router.get(
       where: { id: req.params.attemptId, quiz: { teacherId } },
       include: {
         quiz: { include: { subject: true, class: true } },
-        student: { include: { user: true, class: true } },
+        student: { include: { user: { select: safeUserSelect }, class: true } },
         answers: { include: { question: { include: { options: true } } } },
       },
     });
@@ -136,7 +137,7 @@ router.patch(
     const teacherId = await requireTeacherProfileId(req);
     const attempt = await prisma.quizAttempt.findFirst({
       where: { id: req.params.attemptId, quiz: { teacherId } },
-      include: { quiz: true, student: { include: { user: true } } },
+      include: { quiz: true, student: { include: { user: { select: safeUserSelect } } } },
     });
     if (!attempt) throw new HttpError(404, "Result not found");
 

@@ -180,7 +180,7 @@ function AssignTeacherModal({ subject, onClose }: { subject: Subject; onClose: (
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
-  const teachersQuery = useQuery({ queryKey: ["admin", "users", "teachers-all"], queryFn: () => listUsers({ role: "TEACHER", pageSize: 200 }) });
+  const teachersQuery = useQuery({ queryKey: ["admin", "users", "teachers-all"], queryFn: () => listUsers({ role: "TEACHER", pageSize: 100 }) });
   const classesQuery = useQuery({ queryKey: ["admin", "classes"], queryFn: listClasses });
 
   const mutation = useMutation({

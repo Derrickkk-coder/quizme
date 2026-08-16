@@ -1,5 +1,6 @@
 export type Role = "STUDENT" | "TEACHER" | "ADMIN";
 export type Difficulty = "EASY" | "MEDIUM" | "HARD";
+export type QuestionType = "SINGLE_CHOICE" | "MULTIPLE_SELECT";
 export type QuizStatus = "DRAFT" | "SCHEDULED" | "ACTIVE" | "CLOSED";
 export type AttemptStatus = "IN_PROGRESS" | "SUBMITTED" | "AUTO_SUBMITTED";
 export type NotificationType =
@@ -81,6 +82,7 @@ export interface Question {
   classId: string | null;
   topic: string;
   text: string;
+  type: QuestionType;
   difficulty: Difficulty;
   marks: number;
   explanation: string | null;
@@ -137,9 +139,10 @@ export interface AttemptQuestion {
   questionNumber: number;
   questionId: string;
   text: string;
+  type: QuestionType;
   marks: number;
   options: { id: string; text: string; isCorrect?: boolean }[];
-  selectedOptionId: string | null;
+  selectedOptionIds: string[];
   isCorrect?: boolean;
   marksAwarded?: number;
   explanation?: string | null;

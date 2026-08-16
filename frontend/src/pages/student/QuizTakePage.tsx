@@ -141,13 +141,23 @@ export default function QuizTakePage() {
 
   async function handleSelectOption(questionId: string, optionId: string) {
     if (!attempt) return;
+    const target = attempt.questions.find((q) => q.questionId === questionId);
+    if (!target) return;
+
+    const nextSelected =
+      target.type === "MULTIPLE_SELECT"
+        ? target.selectedOptionIds.includes(optionId)
+          ? target.selectedOptionIds.filter((id) => id !== optionId)
+          : [...target.selectedOptionIds, optionId]
+        : [optionId];
+
     setAttempt((prev) => {
       if (!prev) return prev;
-      const questions = prev.questions.map((q) => (q.questionId === questionId ? { ...q, selectedOptionId: optionId } : q));
-      return { ...prev, questions, answeredCount: questions.filter((q) => q.selectedOptionId).length };
+      const questions = prev.questions.map((q) => (q.questionId === questionId ? { ...q, selectedOptionIds: nextSelected } : q));
+      return { ...prev, questions, answeredCount: questions.filter((q) => q.selectedOptionIds.length > 0).length };
     });
     try {
-      await saveAnswer(attempt.id, questionId, optionId);
+      await saveAnswer(attempt.id, questionId, nextSelected);
     } catch (err) {
       showToast(apiErrorMessage(err), "error");
     }
@@ -172,7 +182,7 @@ export default function QuizTakePage() {
 
   const question = attempt.questions[currentIndex];
   const totalQuestions = attempt.questions.length;
-  const answeredCount = attempt.questions.filter((q) => q.selectedOptionId).length;
+  const answeredCount = attempt.questions.filter((q) => q.selectedOptionIds.length > 0).length;
   const isLast = currentIndex === totalQuestions - 1;
   const isLow = remainingSeconds <= 60;
 
@@ -226,14 +236,20 @@ export default function QuizTakePage() {
             <div className="mb-5 rounded-lg bg-brand-50 px-4 py-3 text-sm text-brand-800">{attempt.instructions}</div>
           )}
 
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
-            Question {currentIndex + 1} of {totalQuestions} · {question.marks} mark{question.marks > 1 ? "s" : ""}
-          </p>
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+              Question {currentIndex + 1} of {totalQuestions} · {question.marks} mark{question.marks > 1 ? "s" : ""}
+            </p>
+            {question.type === "MULTIPLE_SELECT" && (
+              <span className="badge shrink-0 bg-accent-100 text-accent-700">Select all that apply</span>
+            )}
+          </div>
           <h2 className="mt-2 text-lg font-semibold leading-relaxed text-ink-900">{question.text}</h2>
 
           <div className="mt-5 space-y-3">
             {question.options.map((option, i) => {
-              const selected = question.selectedOptionId === option.id;
+              const selected = question.selectedOptionIds.includes(option.id);
+              const isMulti = question.type === "MULTIPLE_SELECT";
               return (
                 <button
                   key={option.id}
@@ -243,7 +259,7 @@ export default function QuizTakePage() {
                   }`}
                 >
                   <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center border text-xs font-bold ${isMulti ? "rounded-md" : "rounded-full"} ${
                       selected ? "border-brand-600 bg-brand-600 text-white" : "border-ink-300 text-ink-500"
                     }`}
                   >
@@ -275,7 +291,7 @@ export default function QuizTakePage() {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-400">Questions</p>
           <div className="grid grid-cols-5 gap-2 lg:grid-cols-4">
             {attempt.questions.map((q, i) => {
-              const answered = !!q.selectedOptionId;
+              const answered = q.selectedOptionIds.length > 0;
               const isCurrent = i === currentIndex;
               return (
                 <button

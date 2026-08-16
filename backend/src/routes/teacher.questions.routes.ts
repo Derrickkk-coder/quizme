@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { Difficulty, Role } from "@prisma/client";
+import { Difficulty, QuestionType, Role } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { authenticate, requireRole } from "../middleware/auth";
 import { validateBody, validateQuery } from "../middleware/validate";
@@ -90,16 +90,26 @@ const questionSchema = z.object({
   classId: z.string().optional(),
   topic: z.string().min(1),
   text: z.string().min(3),
+  type: z.nativeEnum(QuestionType).default(QuestionType.SINGLE_CHOICE),
   difficulty: z.nativeEnum(Difficulty).default(Difficulty.MEDIUM),
   marks: z.number().int().min(1).default(1),
   explanation: z.string().optional(),
   options: z.array(optionSchema).min(2).max(6),
 });
 
-function assertExactlyOneCorrect(options: { isCorrect: boolean }[]) {
+export function assertValidCorrectness(type: QuestionType, options: { isCorrect: boolean }[]) {
   const correctCount = options.filter((o) => o.isCorrect).length;
-  if (correctCount !== 1) {
-    throw new HttpError(400, "Exactly one option must be marked as correct");
+  if (type === QuestionType.SINGLE_CHOICE) {
+    if (correctCount !== 1) {
+      throw new HttpError(400, "Multiple choice questions must have exactly one correct option");
+    }
+  } else {
+    if (correctCount < 1) {
+      throw new HttpError(400, "Multiple selection questions must have at least one correct option");
+    }
+    if (correctCount >= options.length) {
+      throw new HttpError(400, "At least one option must be incorrect");
+    }
   }
 }
 
@@ -109,7 +119,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const teacherId = await requireTeacherProfileId(req);
     const { options, ...rest } = req.body;
-    assertExactlyOneCorrect(options);
+    assertValidCorrectness(rest.type, options);
 
     const question = await prisma.question.create({
       data: {
@@ -131,6 +141,7 @@ const updateQuestionSchema = z.object({
   classId: z.string().optional(),
   topic: z.string().min(1).optional(),
   text: z.string().min(3).optional(),
+  type: z.nativeEnum(QuestionType).optional(),
   difficulty: z.nativeEnum(Difficulty).optional(),
   marks: z.number().int().min(1).optional(),
   explanation: z.string().optional(),
@@ -146,7 +157,7 @@ router.patch(
     if (!existing) throw new HttpError(404, "Question not found");
 
     const { options, ...rest } = req.body;
-    if (options) assertExactlyOneCorrect(options);
+    if (options) assertValidCorrectness(rest.type ?? existing.type, options);
 
     const question = await prisma.$transaction(async (tx) => {
       await tx.question.update({ where: { id: existing.id }, data: rest });

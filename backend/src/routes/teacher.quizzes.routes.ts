@@ -11,6 +11,7 @@ import { requireTeacherProfileId } from "../utils/context";
 import { paginationMeta, paginationSchema } from "../utils/pagination";
 import { syncQuizStatus, syncQuizStatuses } from "../lib/quizStatus";
 import { notifyMany } from "../lib/notify";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const router = Router();
 router.use(authenticate, requireRole(Role.TEACHER));
@@ -199,7 +200,7 @@ router.post(
     const teacherId = await requireTeacherProfileId(req);
     const existing = await prisma.quiz.findFirst({
       where: { id: req.params.id, teacherId },
-      include: { questions: true, class: { include: { students: { include: { user: true } } } } },
+      include: { questions: true, class: { include: { students: { include: { user: { select: safeUserSelect } } } } } },
     });
     if (!existing) throw new HttpError(404, "Quiz not found");
     if (existing.questions.length === 0) throw new HttpError(400, "Add at least one question before publishing");

@@ -21,6 +21,7 @@ import teacherQuizzesRoutes from "./routes/teacher.quizzes.routes";
 import teacherResultsRoutes from "./routes/teacher.results.routes";
 import teacherAnalyticsRoutes from "./routes/teacher.analytics.routes";
 import teacherMetaRoutes from "./routes/teacher.meta.routes";
+import teacherAiRoutes from "./routes/teacher.ai.routes";
 
 import studentQuizzesRoutes from "./routes/student.quizzes.routes";
 import studentAttemptsRoutes from "./routes/student.attempts.routes";
@@ -61,6 +62,7 @@ app.use("/api/teacher/questions", teacherQuestionsRoutes);
 app.use("/api/teacher/quizzes", teacherQuizzesRoutes);
 app.use("/api/teacher/results", teacherResultsRoutes);
 app.use("/api/teacher/analytics", teacherAnalyticsRoutes);
+app.use("/api/teacher/ai", teacherAiRoutes);
 app.use("/api/teacher", teacherMetaRoutes);
 
 app.use("/api/student/quizzes", studentQuizzesRoutes);

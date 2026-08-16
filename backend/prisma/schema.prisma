@@ -21,6 +21,11 @@ enum Difficulty {
   HARD
 }
 
+enum QuestionType {
+  SINGLE_CHOICE
+  MULTIPLE_SELECT
+}
+
 enum QuizStatus {
   DRAFT
   SCHEDULED
@@ -177,6 +182,7 @@ model Question {
   class        Class?     @relation(fields: [classId], references: [id])
   topic        String
   text         String
+  type         QuestionType @default(SINGLE_CHOICE)
   difficulty   Difficulty @default(MEDIUM)
   marks        Int        @default(1)
   explanation  String?
@@ -295,7 +301,7 @@ model Answer {
   attempt          QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
   questionId       String
   question         Question    @relation(fields: [questionId], references: [id])
-  selectedOptionId String?
+  selectedOptionIds String[]  @default([])
   isCorrect        Boolean?
   marksAwarded     Int?
   answeredAt       DateTime    @updatedAt

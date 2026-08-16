@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import {
   createQuestion,
   deleteQuestion,
@@ -18,13 +18,15 @@ import { Modal } from "../../components/ui/Modal";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { Pagination } from "../../components/ui/Pagination";
 import { DifficultyBadge } from "../../components/ui/StatusBadge";
-import { Difficulty, Question } from "../../types";
+import { Difficulty, Question, QuestionType } from "../../types";
+import { GenerateFromNotesModal } from "./GenerateFromNotesModal";
 
 const emptyForm: QuestionPayload = {
   subjectId: "",
   classId: "",
   topic: "",
   text: "",
+  type: "SINGLE_CHOICE",
   difficulty: "MEDIUM",
   marks: 1,
   explanation: "",
@@ -45,6 +47,7 @@ export default function QuestionBankPage() {
   const [editing, setEditing] = useState<Question | null>(null);
   const [previewing, setPreviewing] = useState<Question | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Question | null>(null);
+  const [generateOpen, setGenerateOpen] = useState(false);
 
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -87,9 +90,14 @@ export default function QuestionBankPage() {
           <h1 className="text-2xl font-bold text-ink-900">Question Bank</h1>
           <p className="mt-1 text-sm text-ink-500">Build a reusable library of questions for your quizzes.</p>
         </div>
-        <button className="btn-primary" onClick={openCreate}>
-          <Plus className="h-4 w-4" /> New Question
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="btn-secondary" onClick={() => setGenerateOpen(true)}>
+            <Sparkles className="h-4 w-4" /> Generate from Notes
+          </button>
+          <button className="btn-primary" onClick={openCreate}>
+            <Plus className="h-4 w-4" /> New Question
+          </button>
+        </div>
       </div>
 
       <div className="card flex flex-wrap gap-3 p-4">
@@ -124,6 +132,7 @@ export default function QuestionBankPage() {
                   <p className="text-sm font-medium text-ink-800">{q.text}</p>
                   <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
                     <DifficultyBadge difficulty={q.difficulty} />
+                    {q.type === "MULTIPLE_SELECT" && <span className="badge-brand">Multi-select</span>}
                     <span className="badge-gray">{q.subject?.name}</span>
                     <span className="text-ink-400">{q.topic}</span>
                     <span className="text-ink-400">· {q.marks} mark{q.marks > 1 ? "s" : ""}</span>
@@ -151,6 +160,13 @@ export default function QuestionBankPage() {
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
         editing={editing}
+        subjects={subjectsQuery.data?.data ?? []}
+        classes={classesQuery.data?.data ?? []}
+      />
+
+      <GenerateFromNotesModal
+        open={generateOpen}
+        onClose={() => setGenerateOpen(false)}
         subjects={subjectsQuery.data?.data ?? []}
         classes={classesQuery.data?.data ?? []}
       />
@@ -210,6 +226,7 @@ function QuestionEditorModal({
         classId: editing.classId ?? "",
         topic: editing.topic,
         text: editing.text,
+        type: editing.type,
         difficulty: editing.difficulty,
         marks: editing.marks,
         explanation: editing.explanation ?? "",
@@ -236,8 +253,13 @@ function QuestionEditorModal({
       showToast("Add at least two answer options", "error");
       return;
     }
-    if (!form.options.some((o) => o.isCorrect)) {
-      showToast("Mark one option as correct", "error");
+    const correctCount = form.options.filter((o) => o.isCorrect).length;
+    if (form.type === "SINGLE_CHOICE" && correctCount !== 1) {
+      showToast("Mark exactly one option as correct", "error");
+      return;
+    }
+    if (form.type === "MULTIPLE_SELECT" && (correctCount < 1 || correctCount >= form.options.length)) {
+      showToast("Mark at least one correct option, and leave at least one option incorrect", "error");
       return;
     }
     mutation.mutate();
@@ -249,6 +271,18 @@ function QuestionEditorModal({
 
   function setCorrect(index: number) {
     setForm({ ...form, options: form.options.map((o, i) => ({ ...o, isCorrect: i === index })) });
+  }
+
+  function toggleCorrect(index: number) {
+    setForm({ ...form, options: form.options.map((o, i) => (i === index ? { ...o, isCorrect: !o.isCorrect } : o)) });
+  }
+
+  function changeType(type: QuestionType) {
+    setForm({
+      ...form,
+      type,
+      options: type === "SINGLE_CHOICE" ? form.options.map((o, i) => ({ ...o, isCorrect: i === form.options.findIndex((x) => x.isCorrect) })) : form.options,
+    });
   }
 
   function addOption() {
@@ -309,6 +343,13 @@ function QuestionEditorModal({
             <input required className="input" value={form.topic} onChange={(e) => setForm({ ...form, topic: e.target.value })} placeholder="e.g. Algebra" />
           </div>
           <div>
+            <label className="label">Question type</label>
+            <select className="select" value={form.type} onChange={(e) => changeType(e.target.value as QuestionType)}>
+              <option value="SINGLE_CHOICE">Multiple choice (one answer)</option>
+              <option value="MULTIPLE_SELECT">Multiple selection (several answers)</option>
+            </select>
+          </div>
+          <div>
             <label className="label">Difficulty</label>
             <select className="select" value={form.difficulty} onChange={(e) => setForm({ ...form, difficulty: e.target.value as Difficulty })}>
               <option value="EASY">Easy</option>
@@ -323,11 +364,17 @@ function QuestionEditorModal({
         </div>
 
         <div>
-          <label className="label">Answer options — select the correct one</label>
+          <label className="label">
+            Answer options — {form.type === "MULTIPLE_SELECT" ? "check all correct answers" : "select the correct one"}
+          </label>
           <div className="space-y-2">
             {form.options.map((opt, i) => (
               <div key={i} className="flex items-center gap-2">
-                <input type="radio" name="correct-option" checked={opt.isCorrect} onChange={() => setCorrect(i)} className="h-4 w-4 text-brand-600" />
+                {form.type === "MULTIPLE_SELECT" ? (
+                  <input type="checkbox" checked={opt.isCorrect} onChange={() => toggleCorrect(i)} className="h-4 w-4 rounded text-brand-600" />
+                ) : (
+                  <input type="radio" name="correct-option" checked={opt.isCorrect} onChange={() => setCorrect(i)} className="h-4 w-4 text-brand-600" />
+                )}
                 <input
                   required
                   className="input"

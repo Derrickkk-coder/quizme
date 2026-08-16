@@ -6,6 +6,7 @@ import { authenticate, requireRole } from "../middleware/auth";
 import { validateQuery } from "../middleware/validate";
 import { asyncHandler } from "../utils/asyncHandler";
 import { toCsv } from "../utils/csv";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const router = Router();
 router.use(authenticate, requireRole(Role.ADMIN));
@@ -33,8 +34,8 @@ router.get(
       },
       orderBy: { submittedAt: "desc" },
       include: {
-        quiz: { include: { subject: true, class: true, teacher: { include: { user: true } } } },
-        student: { include: { user: true } },
+        quiz: { include: { subject: true, class: true, teacher: { include: { user: { select: safeUserSelect } } } } },
+        student: { include: { user: { select: safeUserSelect } } },
       },
     });
 

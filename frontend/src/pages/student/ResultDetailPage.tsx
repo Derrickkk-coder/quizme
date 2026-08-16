@@ -74,7 +74,7 @@ export default function ResultDetailPage() {
                   </div>
                   <div className="mt-3 space-y-2">
                     {q.options.map((opt) => {
-                      const isSelected = opt.id === q.selectedOptionId;
+                      const isSelected = q.selectedOptionIds.includes(opt.id);
                       const isCorrectOption = opt.isCorrect;
                       return (
                         <div

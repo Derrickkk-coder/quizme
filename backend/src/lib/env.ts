@@ -15,4 +15,5 @@ export const env = {
     .split(",")
     .map((o) => o.trim())
     .filter(Boolean),
+  geminiApiKey: process.env.GEMINI_API_KEY,
 };

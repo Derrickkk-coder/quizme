@@ -44,7 +44,7 @@ async function serializeAttempt(attemptId: string) {
       deadlineAt: attempt.deadlineAt,
       remainingSeconds,
       totalQuestions: questions.length,
-      answeredCount: attempt.answers.filter((a) => a.selectedOptionId).length,
+      answeredCount: attempt.answers.filter((a) => a.selectedOptionIds.length > 0).length,
       questions,
     };
   }
@@ -58,9 +58,10 @@ async function serializeAttempt(attemptId: string) {
         return {
           questionNumber: index + 1,
           text: qq.question.text,
+          type: qq.question.type,
           marks: qq.marksOverride ?? qq.question.marks,
           marksAwarded: answer?.marksAwarded ?? 0,
-          selectedOptionId: answer?.selectedOptionId ?? null,
+          selectedOptionIds: answer?.selectedOptionIds ?? [],
           isCorrect: answer?.isCorrect ?? false,
           explanation: attempt.quiz.showExplanations ? qq.question.explanation : null,
           options: entry.optionOrder.map((optId) => {
@@ -127,7 +128,7 @@ router.get(
 
 const answerSchema = z.object({
   questionId: z.string(),
-  selectedOptionId: z.string().nullable(),
+  selectedOptionIds: z.array(z.string()),
 });
 
 router.post(
@@ -135,7 +136,7 @@ router.post(
   validateBody(answerSchema),
   asyncHandler(async (req, res) => {
     const studentId = await requireStudentProfileId(req);
-    await saveAnswer(req.params.id, studentId, req.body.questionId, req.body.selectedOptionId);
+    await saveAnswer(req.params.id, studentId, req.body.questionId, req.body.selectedOptionIds);
     res.json({ data: await serializeAttempt(req.params.id) });
   })
 );

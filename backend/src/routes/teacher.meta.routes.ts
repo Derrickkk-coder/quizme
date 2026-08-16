@@ -4,6 +4,7 @@ import { prisma } from "../lib/prisma";
 import { authenticate, requireRole } from "../middleware/auth";
 import { asyncHandler } from "../utils/asyncHandler";
 import { requireTeacherProfileId } from "../utils/context";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const router = Router();
 router.use(authenticate, requireRole(Role.TEACHER));
@@ -11,13 +12,10 @@ router.use(authenticate, requireRole(Role.TEACHER));
 router.get(
   "/classes",
   asyncHandler(async (req, res) => {
-    const teacherId = await requireTeacherProfileId(req);
-    const assignments = await prisma.teacherClassSubject.findMany({
-      where: { teacherId },
-      include: { class: true },
-      distinct: ["classId"],
-    });
-    res.json({ data: assignments.map((a) => a.class) });
+    await requireTeacherProfileId(req);
+    // Every teacher can access every class — classes aren't restricted by assignment.
+    const classes = await prisma.class.findMany({ orderBy: { name: "asc" } });
+    res.json({ data: classes });
   })
 );
 
@@ -37,21 +35,13 @@ router.get(
 router.get(
   "/students",
   asyncHandler(async (req, res) => {
-    const teacherId = await requireTeacherProfileId(req);
+    await requireTeacherProfileId(req);
     const classId = req.query.classId as string | undefined;
 
-    const assignedClassIds = (
-      await prisma.teacherClassSubject.findMany({ where: { teacherId }, distinct: ["classId"] })
-    ).map((a) => a.classId);
-
-    if (classId && !assignedClassIds.includes(classId)) {
-      res.json({ data: [] });
-      return;
-    }
-
+    // Every teacher can access every class's students — not restricted by assignment.
     const students = await prisma.studentProfile.findMany({
-      where: { classId: classId ?? { in: assignedClassIds } },
-      include: { user: true, class: true },
+      where: classId ? { classId } : {},
+      include: { user: { select: safeUserSelect }, class: true },
       orderBy: { user: { name: "asc" } },
     });
     res.json({ data: students });

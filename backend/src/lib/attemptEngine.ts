@@ -5,12 +5,13 @@ import { computeEffectiveStatus } from "./quizStatus";
 import { gradeForPercent } from "./grade";
 import { notify } from "./notify";
 import { recordAudit } from "./audit";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const quizWithQuestions = {
   questions: { include: { question: { include: { options: true } } } },
   subject: true,
   class: true,
-  teacher: { include: { user: true } },
+  teacher: { include: { user: { select: safeUserSelect } } },
 } as const;
 
 type QuestionOrderEntry = { questionId: string; optionOrder: string[] };
@@ -108,9 +109,9 @@ export async function loadAttemptForStudent(attemptId: string, studentId: string
   return attempt;
 }
 
-export async function buildQuestionPayload(quiz: { questions: any[] }, questionOrder: QuestionOrderEntry[], savedAnswers: { questionId: string; selectedOptionId: string | null }[]) {
+export async function buildQuestionPayload(quiz: { questions: any[] }, questionOrder: QuestionOrderEntry[], savedAnswers: { questionId: string; selectedOptionIds: string[] }[]) {
   const questionMap = new Map(quiz.questions.map((qq: any) => [qq.questionId as string, qq]));
-  const answerMap = new Map(savedAnswers.map((a) => [a.questionId, a.selectedOptionId]));
+  const answerMap = new Map(savedAnswers.map((a) => [a.questionId, a.selectedOptionIds]));
 
   return questionOrder.map((entry, index) => {
     const qq = questionMap.get(entry.questionId);
@@ -119,17 +120,18 @@ export async function buildQuestionPayload(quiz: { questions: any[] }, questionO
       questionNumber: index + 1,
       questionId: entry.questionId,
       text: qq.question.text,
+      type: qq.question.type,
       marks: qq.marksOverride ?? qq.question.marks,
       options: entry.optionOrder.map((optId) => {
         const opt: any = optionMap.get(optId);
         return { id: opt.id, text: opt.text };
       }),
-      selectedOptionId: answerMap.get(entry.questionId) ?? null,
+      selectedOptionIds: answerMap.get(entry.questionId) ?? [],
     };
   });
 }
 
-export async function saveAnswer(attemptId: string, studentId: string, questionId: string, selectedOptionId: string | null) {
+export async function saveAnswer(attemptId: string, studentId: string, questionId: string, selectedOptionIds: string[]) {
   const attempt = await loadAttemptForStudent(attemptId, studentId);
   if (attempt.status !== AttemptStatus.IN_PROGRESS) {
     throw new HttpError(400, "This attempt has already been submitted");
@@ -138,14 +140,19 @@ export async function saveAnswer(attemptId: string, studentId: string, questionI
   const questionOrder = attempt.questionOrder as unknown as QuestionOrderEntry[];
   const entry = questionOrder.find((q) => q.questionId === questionId);
   if (!entry) throw new HttpError(400, "This question is not part of the current attempt");
-  if (selectedOptionId && !entry.optionOrder.includes(selectedOptionId)) {
+  if (selectedOptionIds.some((id) => !entry.optionOrder.includes(id))) {
     throw new HttpError(400, "Invalid option for this question");
+  }
+
+  const question = await prisma.question.findUniqueOrThrow({ where: { id: questionId }, select: { type: true } });
+  if (question.type === "SINGLE_CHOICE" && selectedOptionIds.length > 1) {
+    throw new HttpError(400, "This question only allows one selected answer");
   }
 
   const answer = await prisma.answer.upsert({
     where: { attemptId_questionId: { attemptId, questionId } },
-    update: { selectedOptionId },
-    create: { attemptId, questionId, selectedOptionId },
+    update: { selectedOptionIds },
+    create: { attemptId, questionId, selectedOptionIds },
   });
 
   return answer;
@@ -176,8 +183,8 @@ async function finalizeAttempt(attemptId: string, auto: boolean, tabSwitchCount?
   const attempt = await prisma.quizAttempt.findUniqueOrThrow({
     where: { id: attemptId },
     include: {
-      quiz: { include: { questions: { include: { question: { include: { options: true } } } }, teacher: { include: { user: true } } } },
-      student: { include: { user: true } },
+      quiz: { include: { questions: { include: { question: { include: { options: true } } } }, teacher: { include: { user: { select: safeUserSelect } } } } },
+      student: { include: { user: { select: safeUserSelect } } },
       answers: true,
     },
   });
@@ -193,8 +200,12 @@ async function finalizeAttempt(attemptId: string, auto: boolean, tabSwitchCount?
   await prisma.$transaction(
     attempt.answers.map((answer) => {
       const qq = questionsByid.get(answer.questionId);
-      const correctOption = qq?.question.options.find((o) => o.isCorrect);
-      const isCorrect = !!answer.selectedOptionId && !!correctOption && answer.selectedOptionId === correctOption.id;
+      const correctOptionIds = new Set((qq?.question.options ?? []).filter((o) => o.isCorrect).map((o) => o.id));
+      const selected = new Set(answer.selectedOptionIds);
+      const isCorrect =
+        selected.size > 0 &&
+        selected.size === correctOptionIds.size &&
+        [...selected].every((id) => correctOptionIds.has(id));
       const marksAwarded = isCorrect ? qq?.marksOverride ?? qq?.question.marks ?? 0 : 0;
       if (isCorrect) score += marksAwarded;
       return prisma.answer.update({ where: { id: answer.id }, data: { isCorrect, marksAwarded } });

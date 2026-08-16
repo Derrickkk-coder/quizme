@@ -19,3 +19,5 @@ services:
         value: 8h
       - key: CORS_ORIGIN
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false

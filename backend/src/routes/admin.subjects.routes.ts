@@ -7,6 +7,7 @@ import { validateBody } from "../middleware/validate";
 import { asyncHandler } from "../utils/asyncHandler";
 import { HttpError } from "../middleware/errorHandler";
 import { recordAudit } from "../lib/audit";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const router = Router();
 router.use(authenticate, requireRole(Role.ADMIN));
@@ -18,7 +19,7 @@ router.get(
       orderBy: { name: "asc" },
       include: {
         _count: { select: { quizzes: true, questions: true } },
-        assignments: { include: { teacher: { include: { user: true } }, class: true } },
+        assignments: { include: { teacher: { include: { user: { select: safeUserSelect } } }, class: true } },
       },
     });
     res.json({ data: subjects });
@@ -81,7 +82,7 @@ router.post(
 
     const created = await prisma.teacherClassSubject.create({
       data: { teacherId, classId, subjectId },
-      include: { teacher: { include: { user: true } }, class: true, subject: true },
+      include: { teacher: { include: { user: { select: safeUserSelect } } }, class: true, subject: true },
     });
 
     await recordAudit({

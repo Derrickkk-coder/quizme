@@ -1,6 +1,7 @@
 import { AttemptStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { HttpError } from "../middleware/errorHandler";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const SUBMITTED = { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] };
 
@@ -90,7 +91,10 @@ export async function computeQuizAnalytics(quizId: string, teacherId?: string) {
 }
 
 export async function computeStudentPerformance(studentId: string, teacherId?: string) {
-  const student = await prisma.studentProfile.findUnique({ where: { id: studentId }, include: { user: true, class: true } });
+  const student = await prisma.studentProfile.findUnique({
+    where: { id: studentId },
+    include: { user: { select: safeUserSelect }, class: true },
+  });
   if (!student) throw new HttpError(404, "Student not found");
 
   const attempts = await prisma.quizAttempt.findMany({

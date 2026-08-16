@@ -4,6 +4,7 @@ import {
   Difficulty,
   Paginated,
   Question,
+  QuestionType,
   Quiz,
   QuizAnalytics,
   QuizAttemptSummary,
@@ -58,6 +59,7 @@ export interface QuestionPayload {
   classId?: string;
   topic: string;
   text: string;
+  type: QuestionType;
   difficulty: Difficulty;
   marks: number;
   explanation?: string;
@@ -76,6 +78,41 @@ export async function updateQuestion(id: string, payload: Partial<QuestionPayloa
 
 export async function deleteQuestion(id: string): Promise<void> {
   await apiClient.delete(`/teacher/questions/${id}`);
+}
+
+// ─── AI question generation ─────────────────────────────────────────────
+
+export interface GeneratedQuestion {
+  text: string;
+  type: QuestionType;
+  difficulty: Difficulty;
+  explanation: string;
+  options: { text: string; isCorrect: boolean }[];
+}
+
+export interface GenerateQuestionsPayload {
+  notes: string;
+  count: number;
+  difficulty: Difficulty | "MIXED";
+  questionType: QuestionType | "MIXED";
+  topic?: string;
+}
+
+export async function generateQuestionsFromNotes(payload: GenerateQuestionsPayload): Promise<{ data: GeneratedQuestion[] }> {
+  const { data } = await apiClient.post("/teacher/ai/generate-questions", payload);
+  return data;
+}
+
+export interface SaveGeneratedQuestionsPayload {
+  subjectId: string;
+  classId?: string;
+  topic: string;
+  questions: GeneratedQuestion[];
+}
+
+export async function saveGeneratedQuestions(payload: SaveGeneratedQuestionsPayload): Promise<{ data: Question[] }> {
+  const { data } = await apiClient.post("/teacher/ai/save-questions", payload);
+  return data;
 }
 
 // ─── Quizzes ───────────────────────────────────────────────────────────

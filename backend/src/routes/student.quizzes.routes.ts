@@ -6,6 +6,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { HttpError } from "../middleware/errorHandler";
 import { requireStudentProfileId } from "../utils/context";
 import { syncQuizStatuses } from "../lib/quizStatus";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const router = Router();
 router.use(authenticate, requireRole(Role.STUDENT));
@@ -13,7 +14,7 @@ router.use(authenticate, requireRole(Role.STUDENT));
 const quizCardInclude = {
   subject: true,
   class: true,
-  teacher: { include: { user: true } },
+  teacher: { include: { user: { select: safeUserSelect } } },
   _count: { select: { questions: true } },
 } as const;
 

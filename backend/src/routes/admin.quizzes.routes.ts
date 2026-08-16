@@ -7,6 +7,7 @@ import { validateQuery } from "../middleware/validate";
 import { asyncHandler } from "../utils/asyncHandler";
 import { paginationMeta, paginationSchema } from "../utils/pagination";
 import { syncQuizStatuses } from "../lib/quizStatus";
+import { safeUserSelect } from "../utils/safeSelects";
 
 const router = Router();
 router.use(authenticate, requireRole(Role.ADMIN));
@@ -40,7 +41,7 @@ router.get(
         include: {
           subject: true,
           class: true,
-          teacher: { include: { user: true } },
+          teacher: { include: { user: { select: safeUserSelect } } },
           _count: { select: { questions: true, attempts: true } },
         },
       }),
