@@ -120,7 +120,9 @@ export async function generateQuestionsFromNotes(params: GenerateQuestionsParams
       },
     });
   } catch (err) {
-    throw new HttpError(502, "The AI service could not be reached. Please try again.");
+    console.error("Gemini generateContent failed:", err);
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new HttpError(502, `The AI service could not be reached: ${detail}`);
   }
 
   const raw = response.text;
