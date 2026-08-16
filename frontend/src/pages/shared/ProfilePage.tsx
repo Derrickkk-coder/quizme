@@ -80,7 +80,7 @@ export default function ProfilePage() {
                   {user.teacherProfile.assignments?.length ? (
                     user.teacherProfile.assignments.map((a) => (
                       <span key={a.id} className="badge-gray">
-                        {a.subject?.name} · {a.class?.name}
+                        {a.subject?.name}
                       </span>
                     ))
                   ) : (

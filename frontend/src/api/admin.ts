@@ -108,8 +108,8 @@ export async function deleteSubject(id: string): Promise<void> {
   await apiClient.delete(`/admin/subjects/${id}`);
 }
 
-export async function assignTeacherToSubject(subjectId: string, teacherId: string, classId: string) {
-  const { data } = await apiClient.post(`/admin/subjects/${subjectId}/assignments`, { teacherId, classId });
+export async function assignTeacherToSubject(subjectId: string, teacherId: string) {
+  const { data } = await apiClient.post(`/admin/subjects/${subjectId}/assignments`, { teacherId });
   return data;
 }
 

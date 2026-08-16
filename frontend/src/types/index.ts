@@ -33,10 +33,8 @@ export interface Subject {
 export interface TeacherClassSubject {
   id: string;
   teacherId: string;
-  classId: string;
   subjectId: string;
   teacher?: TeacherProfile;
-  class?: SchoolClass;
   subject?: Subject;
 }
 

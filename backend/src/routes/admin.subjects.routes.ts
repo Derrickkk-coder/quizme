@@ -19,7 +19,7 @@ router.get(
       orderBy: { name: "asc" },
       include: {
         _count: { select: { quizzes: true, questions: true } },
-        assignments: { include: { teacher: { include: { user: { select: safeUserSelect } } }, class: true } },
+        assignments: { include: { teacher: { include: { user: { select: safeUserSelect } } } } },
       },
     });
     res.json({ data: subjects });
@@ -65,24 +65,23 @@ router.delete(
 
 const assignSchema = z.object({
   teacherId: z.string(),
-  classId: z.string(),
 });
 
 router.post(
   "/:id/assignments",
   validateBody(assignSchema),
   asyncHandler(async (req, res) => {
-    const { teacherId, classId } = req.body;
+    const { teacherId } = req.body;
     const subjectId = req.params.id;
 
     const existing = await prisma.teacherClassSubject.findUnique({
-      where: { teacherId_classId_subjectId: { teacherId, classId, subjectId } },
+      where: { teacherId_subjectId: { teacherId, subjectId } },
     });
-    if (existing) throw new HttpError(409, "This teacher is already assigned to this subject and class");
+    if (existing) throw new HttpError(409, "This teacher is already assigned to this subject");
 
     const created = await prisma.teacherClassSubject.create({
-      data: { teacherId, classId, subjectId },
-      include: { teacher: { include: { user: { select: safeUserSelect } } }, class: true, subject: true },
+      data: { teacherId, subjectId },
+      include: { teacher: { include: { user: { select: safeUserSelect } } }, subject: true },
     });
 
     await recordAudit({
@@ -90,7 +89,7 @@ router.post(
       action: "TEACHER_ASSIGNED",
       entityType: "TeacherClassSubject",
       entityId: created.id,
-      metadata: { teacherId, classId, subjectId },
+      metadata: { teacherId, subjectId },
       req,
     });
 

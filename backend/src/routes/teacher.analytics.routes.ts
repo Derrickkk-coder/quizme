@@ -14,10 +14,12 @@ router.get(
   "/overview",
   asyncHandler(async (req, res) => {
     const teacherId = await requireTeacherProfileId(req);
+    // "Classes taught" reflects classes this teacher has actually posted quizzes
+    // to, not assignment config — any teacher can post to any class.
     const [quizCount, questionCount, classCount, attemptCount] = await Promise.all([
       prisma.quiz.count({ where: { teacherId } }),
       prisma.question.count({ where: { teacherId } }),
-      prisma.teacherClassSubject.findMany({ where: { teacherId }, distinct: ["classId"] }).then((r) => r.length),
+      prisma.quiz.findMany({ where: { teacherId }, distinct: ["classId"], select: { classId: true } }).then((r) => r.length),
       prisma.quizAttempt.count({ where: { quiz: { teacherId } } }),
     ]);
     res.json({ data: { quizCount, questionCount, classCount, attemptCount } });

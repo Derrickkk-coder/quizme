@@ -109,7 +109,6 @@ model Class {
   createdAt DateTime @default(now())
 
   students    StudentProfile[]
-  assignments TeacherClassSubject[]
   quizzes     Quiz[]
   questions   Question[]
 
@@ -129,17 +128,17 @@ model Subject {
   @@map("subjects")
 }
 
+// Which subjects a teacher teaches. Not scoped to a class — every teacher
+// can create quizzes for every class; this only tracks subject ownership.
 model TeacherClassSubject {
   id        String   @id @default(cuid()) @map("_id")
   teacherId String
   teacher   TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  classId   String
-  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
   subjectId String
   subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
-  @@unique([teacherId, classId, subjectId])
+  @@unique([teacherId, subjectId])
   @@map("teacher_class_subjects")
 }
 

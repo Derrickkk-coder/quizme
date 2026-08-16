@@ -55,7 +55,7 @@ router.get(
         take: pageSize,
         include: {
           studentProfile: { include: { class: true } },
-          teacherProfile: { include: { assignments: { include: { class: true, subject: true } } } },
+          teacherProfile: { include: { assignments: { include: { subject: true } } } },
         },
       }),
     ]);

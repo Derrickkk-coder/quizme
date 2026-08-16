@@ -5,7 +5,6 @@ import {
   assignTeacherToSubject,
   createSubject,
   deleteSubject,
-  listClasses,
   listSubjects,
   listUsers,
   removeAssignment,
@@ -76,7 +75,7 @@ export default function SubjectsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-ink-900">Subjects</h1>
-          <p className="mt-1 text-sm text-ink-500">Manage subjects and assign teachers to classes.</p>
+          <p className="mt-1 text-sm text-ink-500">Manage subjects and assign teachers.</p>
         </div>
         <button className="btn-primary" onClick={openCreate}>
           <Plus className="h-4 w-4" /> Add Subject
@@ -115,7 +114,7 @@ export default function SubjectsPage() {
                   <div className="flex flex-wrap gap-2">
                     {s.assignments.map((a) => (
                       <span key={a.id} className="badge-brand">
-                        {a.teacher?.user?.name} · {a.class?.name}
+                        {a.teacher?.user?.name}
                         <button
                           onClick={async () => {
                             await removeAssignment(a.id);
@@ -176,15 +175,13 @@ export default function SubjectsPage() {
 
 function AssignTeacherModal({ subject, onClose }: { subject: Subject; onClose: () => void }) {
   const [teacherId, setTeacherId] = useState("");
-  const [classId, setClassId] = useState("");
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
   const teachersQuery = useQuery({ queryKey: ["admin", "users", "teachers-all"], queryFn: () => listUsers({ role: "TEACHER", pageSize: 100 }) });
-  const classesQuery = useQuery({ queryKey: ["admin", "classes"], queryFn: listClasses });
 
   const mutation = useMutation({
-    mutationFn: () => assignTeacherToSubject(subject.id, teacherId, classId),
+    mutationFn: () => assignTeacherToSubject(subject.id, teacherId),
     onSuccess: () => {
       showToast("Teacher assigned", "success");
       queryClient.invalidateQueries({ queryKey: ["admin", "subjects"] });
@@ -201,26 +198,18 @@ function AssignTeacherModal({ subject, onClose }: { subject: Subject; onClose: (
       footer={
         <>
           <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" disabled={!teacherId || !classId || mutation.isPending} onClick={() => mutation.mutate()}>Assign</button>
+          <button className="btn-primary" disabled={!teacherId || mutation.isPending} onClick={() => mutation.mutate()}>Assign</button>
         </>
       }
     >
       <div className="space-y-4">
+        <p className="text-sm text-ink-500">The teacher will be able to create quizzes and questions for {subject.name} in any class.</p>
         <div>
           <label className="label">Teacher</label>
           <select className="select" value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
             <option value="">Select teacher</option>
             {teachersQuery.data?.data.map((t) => (
               <option key={t.teacherProfile?.id} value={t.teacherProfile?.id}>{t.name}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="label">Class</label>
-          <select className="select" value={classId} onChange={(e) => setClassId(e.target.value)}>
-            <option value="">Select class</option>
-            {classesQuery.data?.data.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
             ))}
           </select>
         </div>

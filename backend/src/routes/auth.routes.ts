@@ -77,7 +77,7 @@ router.get(
       where: { id: req.user!.sub },
       include: {
         studentProfile: { include: { class: true } },
-        teacherProfile: { include: { assignments: { include: { class: true, subject: true } } } },
+        teacherProfile: { include: { assignments: { include: { subject: true } } } },
       },
     });
     if (!user) throw new HttpError(404, "User not found");

@@ -26,7 +26,6 @@ router.get(
     const assignments = await prisma.teacherClassSubject.findMany({
       where: { teacherId },
       include: { subject: true },
-      distinct: ["subjectId"],
     });
     res.json({ data: assignments.map((a) => a.subject) });
   })
