@@ -19,6 +19,13 @@ async function getClient(): Promise<GoogleGenAIType> {
   return client;
 }
 
+// Gemini returns HTTP 503 (model overloaded) or 429 (rate limited) for
+// transient load spikes — Google's own guidance is to retry these.
+async function isRetryableApiError(err: unknown): Promise<boolean> {
+  const { ApiError } = await import("@google/genai");
+  return err instanceof ApiError && (err.status === 503 || err.status === 429);
+}
+
 // Mirrors the @google/genai `Type` enum values (plain strings, so this file
 // doesn't need the dynamic import just to build a schema literal).
 const responseSchema = {
@@ -107,22 +114,36 @@ export async function generateQuestionsFromNotes(params: GenerateQuestionsParams
     .filter(Boolean)
     .join("\n\n");
 
-  let response;
-  try {
-    response = await ai.models.generateContent({
-      model: "gemini-3.7-flash",
-      contents: prompt,
-      config: {
-        systemInstruction:
-          "You are an assistant that writes exam-quality multiple choice quiz questions for Junior High School (JHS) students, strictly grounded in the teacher's notes provided. Do not invent facts that are not supported by the notes. Keep language age-appropriate and unambiguous.",
-        responseMimeType: "application/json",
-        responseSchema,
-      },
-    });
-  } catch (err) {
-    console.error("Gemini generateContent failed:", err);
-    const detail = err instanceof Error ? err.message : String(err);
-    throw new HttpError(502, `The AI service could not be reached: ${detail}`);
+  const MAX_ATTEMPTS = 3;
+  let response: Awaited<ReturnType<GoogleGenAIType["models"]["generateContent"]>> | undefined;
+  let lastErr: unknown;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.7-flash",
+        contents: prompt,
+        config: {
+          systemInstruction:
+            "You are an assistant that writes exam-quality multiple choice quiz questions for Junior High School (JHS) students, strictly grounded in the teacher's notes provided. Do not invent facts that are not supported by the notes. Keep language age-appropriate and unambiguous.",
+          responseMimeType: "application/json",
+          responseSchema,
+        },
+      });
+      lastErr = undefined;
+      break;
+    } catch (err) {
+      lastErr = err;
+      const retryable = await isRetryableApiError(err);
+      if (!retryable || attempt === MAX_ATTEMPTS) break;
+      await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)));
+    }
+  }
+
+  if (lastErr || !response) {
+    console.error("Gemini generateContent failed:", lastErr);
+    const detail = lastErr instanceof Error ? lastErr.message : String(lastErr);
+    throw new HttpError(502, `The AI service is temporarily unavailable. Please try again in a moment. (${detail})`);
   }
 
   const raw = response.text;
