@@ -89,7 +89,7 @@ const quizSchema = z.object({
   maxAttempts: z.number().int().min(1).max(10).default(1),
   randomizeQuestions: z.boolean().default(true),
   randomizeOptions: z.boolean().default(true),
-  showCorrectAnswers: z.boolean().default(true),
+  showCorrectAnswers: z.boolean().default(false),
   showExplanations: z.boolean().default(true),
   showResultsImmediately: z.boolean().default(true),
 });

@@ -36,7 +36,7 @@ const emptyForm: QuizPayload = {
   maxAttempts: 1,
   randomizeQuestions: true,
   randomizeOptions: true,
-  showCorrectAnswers: true,
+  showCorrectAnswers: false,
   showExplanations: true,
   showResultsImmediately: true,
 };

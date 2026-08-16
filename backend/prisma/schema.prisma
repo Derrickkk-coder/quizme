@@ -233,7 +233,7 @@ model Quiz {
 
   randomizeQuestions     Boolean    @default(true)
   randomizeOptions       Boolean    @default(true)
-  showCorrectAnswers     Boolean    @default(true)
+  showCorrectAnswers     Boolean    @default(false)
   showExplanations       Boolean    @default(true)
   showResultsImmediately Boolean    @default(true)
 
