@@ -11,6 +11,7 @@ import {
   Layers,
   ListChecks,
   Plus,
+  RotateCcw,
   Save,
   Send,
   Settings2,
@@ -31,6 +32,7 @@ import {
   listQuestions,
   publishQuiz,
   closeQuiz,
+  unpublishQuiz,
   QuizPayload,
   removeQuestionFromQuiz,
   updateQuiz,
@@ -149,6 +151,15 @@ export default function QuizEditorPage() {
     onError: (err) => showToast(apiErrorMessage(err), "error"),
   });
 
+  const reopenMutation = useMutation({
+    mutationFn: () => unpublishQuiz(quizId!),
+    onSuccess: () => {
+      showToast("Quiz reopened as a draft — publish it again when you're ready", "success");
+      queryClient.invalidateQueries({ queryKey: ["teacher", "quiz", quizId] });
+    },
+    onError: (err) => showToast(apiErrorMessage(err), "error"),
+  });
+
   const removeQuestionMutation = useMutation({
     mutationFn: (quizQuestionId: string) => removeQuestionFromQuiz(quizId!, quizQuestionId),
     onSuccess: () => {
@@ -190,6 +201,11 @@ export default function QuizEditorPage() {
             {(quiz.status === "ACTIVE" || quiz.status === "SCHEDULED") && (
               <button className="btn-secondary btn-sm" onClick={() => closeMutation.mutate()} disabled={closeMutation.isPending}>
                 <XCircle className="h-4 w-4" /> Close
+              </button>
+            )}
+            {quiz.status === "CLOSED" && (quiz._count?.attempts ?? 0) === 0 && (
+              <button className="btn-secondary btn-sm" onClick={() => reopenMutation.mutate()} disabled={reopenMutation.isPending} title="No students have attempted this quiz yet, so it's safe to reopen">
+                <RotateCcw className="h-4 w-4" /> Reopen
               </button>
             )}
           </div>
