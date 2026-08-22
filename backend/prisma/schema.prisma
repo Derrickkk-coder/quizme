@@ -68,6 +68,8 @@ model User {
 
   notifications  Notification[]
   auditLogs      AuditLog[]        @relation("AuditActor")
+  chatMessages   ChatMessage[]
+  chatGroupReads ChatGroupRead[]
 
   @@map("users")
 }
@@ -96,6 +98,7 @@ model TeacherProfile {
   assignments TeacherClassSubject[]
   questions   Question[]
   quizzes     Quiz[]
+  chatGroups  ChatGroup[]
 
   @@map("teacher_profiles")
 }
@@ -111,6 +114,7 @@ model Class {
   students    StudentProfile[]
   quizzes     Quiz[]
   questions   Question[]
+  chatGroups  ChatGroup[]
 
   @@map("classes")
 }
@@ -124,6 +128,7 @@ model Subject {
   assignments TeacherClassSubject[]
   quizzes     Quiz[]
   questions   Question[]
+  chatGroups  ChatGroup[]
 
   @@map("subjects")
 }
@@ -319,6 +324,56 @@ model GradeBand {
   label     String?
 
   @@map("grade_bands")
+}
+
+// ─── Class chat ─────────────────────────────────────────────────────────
+
+// One chat group per (subject, class) — created by a teacher who teaches
+// that subject. Membership isn't a separate join table: any teacher
+// currently assigned to the subject, and any student currently in the
+// class, has access — matching how quiz/class access already works.
+model ChatGroup {
+  id        String   @id @default(cuid()) @map("_id")
+  name      String
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  classId   String
+  class     Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  teacherId String
+  teacher   TeacherProfile @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  messages ChatMessage[]
+  reads    ChatGroupRead[]
+
+  @@unique([subjectId, classId])
+  @@map("chat_groups")
+}
+
+model ChatMessage {
+  id        String    @id @default(cuid()) @map("_id")
+  groupId   String
+  group     ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime  @default(now())
+
+  @@index([groupId, createdAt])
+  @@map("chat_messages")
+}
+
+// Tracks the last time each user read each group, for unread badges.
+model ChatGroupRead {
+  id         String    @id @default(cuid()) @map("_id")
+  groupId    String
+  group      ChatGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastReadAt DateTime  @default(now())
+
+  @@unique([groupId, userId])
+  @@map("chat_group_reads")
 }
 
 // ─── Notifications ──────────────────────────────────────────────────────

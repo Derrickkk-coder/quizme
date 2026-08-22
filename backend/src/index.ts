@@ -1,8 +1,10 @@
+import http from "http";
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import { env } from "./lib/env";
 import { notFoundHandler, errorHandler } from "./middleware/errorHandler";
+import { initWebSocketServer } from "./lib/ws";
 
 import authRoutes from "./routes/auth.routes";
 import notificationRoutes from "./routes/notifications.routes";
@@ -22,10 +24,12 @@ import teacherResultsRoutes from "./routes/teacher.results.routes";
 import teacherAnalyticsRoutes from "./routes/teacher.analytics.routes";
 import teacherMetaRoutes from "./routes/teacher.meta.routes";
 import teacherAiRoutes from "./routes/teacher.ai.routes";
+import teacherChatRoutes from "./routes/teacher.chat.routes";
 
 import studentQuizzesRoutes from "./routes/student.quizzes.routes";
 import studentAttemptsRoutes from "./routes/student.attempts.routes";
 import studentPerformanceRoutes from "./routes/student.performance.routes";
+import studentChatRoutes from "./routes/student.chat.routes";
 
 const app = express();
 
@@ -63,15 +67,20 @@ app.use("/api/teacher/quizzes", teacherQuizzesRoutes);
 app.use("/api/teacher/results", teacherResultsRoutes);
 app.use("/api/teacher/analytics", teacherAnalyticsRoutes);
 app.use("/api/teacher/ai", teacherAiRoutes);
+app.use("/api/teacher/chat", teacherChatRoutes);
 app.use("/api/teacher", teacherMetaRoutes);
 
 app.use("/api/student/quizzes", studentQuizzesRoutes);
 app.use("/api/student/attempts", studentAttemptsRoutes);
 app.use("/api/student/performance", studentPerformanceRoutes);
+app.use("/api/student/chat", studentChatRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-app.listen(env.port, () => {
+const server = http.createServer(app);
+initWebSocketServer(server);
+
+server.listen(env.port, () => {
   console.log(`QUIZME API listening on http://localhost:${env.port}`);
 });

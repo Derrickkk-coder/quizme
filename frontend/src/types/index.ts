@@ -208,6 +208,32 @@ export interface AppNotification {
   createdAt: string;
 }
 
+export interface ChatSender {
+  id: string;
+  name: string;
+  role: Role;
+}
+
+export interface ChatMessage {
+  id: string;
+  groupId: string;
+  senderId: string;
+  sender: ChatSender;
+  text: string;
+  createdAt: string;
+}
+
+export interface ChatGroup {
+  id: string;
+  name: string;
+  subject: Subject;
+  class: SchoolClass;
+  teacher?: TeacherProfile;
+  createdAt: string;
+  unreadCount: number;
+  lastMessage: ChatMessage | null;
+}
+
 export interface AuditLogEntry {
   id: string;
   actorId: string | null;

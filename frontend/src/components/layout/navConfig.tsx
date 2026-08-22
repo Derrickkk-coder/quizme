@@ -16,6 +16,7 @@ import {
   FileBarChart,
   ShieldCheck,
   Settings,
+  MessageCircle,
 } from "lucide-react";
 import { ComponentType } from "react";
 import { Role } from "../../types";
@@ -33,6 +34,7 @@ export const studentNav: NavItem[] = [
   { label: "Results", to: "/app/student/results", icon: ListChecks },
   { label: "Performance", to: "/app/student/performance", icon: BarChart3 },
   { label: "History", to: "/app/student/history", icon: History },
+  { label: "Chat", to: "/app/student/chat", icon: MessageCircle },
   { label: "Notifications", to: "/app/student/notifications", icon: Bell },
   { label: "Profile", to: "/app/student/profile", icon: User },
 ];
@@ -43,6 +45,7 @@ export const teacherNav: NavItem[] = [
   { label: "Create Quiz", to: "/app/teacher/quizzes/new", icon: PlusCircle },
   { label: "Question Bank", to: "/app/teacher/questions", icon: Library },
   { label: "Students", to: "/app/teacher/students", icon: Users },
+  { label: "Chat", to: "/app/teacher/chat", icon: MessageCircle },
   { label: "Results", to: "/app/teacher/results", icon: ClipboardList },
   { label: "Analytics", to: "/app/teacher/analytics", icon: BarChart3 },
   { label: "Notifications", to: "/app/teacher/notifications", icon: Bell },

@@ -40,6 +40,7 @@ import SettingsPage from "./pages/admin/SettingsPage";
 
 import NotificationsPage from "./pages/shared/NotificationsPage";
 import ProfilePage from "./pages/shared/ProfilePage";
+import ChatPage from "./pages/shared/ChatPage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,6 +76,7 @@ export default function App() {
                   <Route path="results/:attemptId" element={<StudentResultDetailPage />} />
                   <Route path="performance" element={<PerformancePage />} />
                   <Route path="history" element={<HistoryPage />} />
+                  <Route path="chat" element={<ChatPage />} />
                   <Route path="notifications" element={<NotificationsPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                 </Route>
@@ -88,6 +90,7 @@ export default function App() {
                   <Route path="quizzes/:quizId/edit" element={<QuizEditorPage />} />
                   <Route path="questions" element={<QuestionBankPage />} />
                   <Route path="students" element={<TeacherStudentsPage />} />
+                  <Route path="chat" element={<ChatPage />} />
                   <Route path="results" element={<TeacherResultsPage />} />
                   <Route path="results/:attemptId" element={<TeacherResultDetailPage />} />
                   <Route path="analytics" element={<TeacherAnalyticsPage />} />
