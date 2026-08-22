@@ -6,6 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { roleHomePath } from "../../routes/ProtectedRoute";
 import { apiErrorMessage } from "../../api/client";
 import { LogoMark } from "../../components/Logo";
+import { ThemeToggle } from "../../components/ui/ThemeToggle";
 
 export default function LoginPage() {
   const { user, login } = useAuth();
@@ -41,6 +42,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen">
       {/* Soft neumorphic form panel — full width on mobile, half width on desktop */}
       <div className="neu-surface relative flex w-full flex-col items-center justify-center overflow-hidden px-6 py-12 lg:w-1/2">
+        <div className="absolute right-4 top-4 z-20">
+          <ThemeToggle />
+        </div>
         <div
           className="pointer-events-none absolute bottom-0 left-0 h-72 w-72 bg-gradient-to-tr from-brand-700 to-brand-400 lg:h-96 lg:w-96"
           style={{ clipPath: "polygon(0 100%, 55% 100%, 0 40%)" }}

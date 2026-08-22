@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Logo } from "../../components/Logo";
 import { RevealGroup, RevealCard } from "../../components/motion/Reveal";
+import { ThemeToggle } from "../../components/ui/ThemeToggle";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -107,12 +108,12 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-white">
+    <div className="min-h-screen overflow-x-hidden bg-surface">
       <motion.header
         initial={{ y: -80, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 120, damping: 18 }}
-        className="sticky top-0 z-30 border-b border-ink-100 bg-white/80 backdrop-blur"
+        className="sticky top-0 z-30 border-b border-ink-100 bg-surface/80 backdrop-blur"
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <motion.div whileHover={{ rotate: [0, -6, 6, -3, 0] }} transition={{ duration: 0.5 }}>
@@ -127,6 +128,7 @@ export default function LandingPage() {
             ))}
           </nav>
           <div className="hidden items-center gap-3 md:flex">
+            <ThemeToggle />
             <Link to="/login" className="btn-secondary btn-sm">
               Teacher Login
             </Link>
@@ -136,9 +138,12 @@ export default function LandingPage() {
               </Link>
             </motion.div>
           </div>
-          <button className="md:hidden" onClick={() => setMobileOpen((o) => !o)} aria-label="Toggle menu">
+          <div className="flex items-center gap-1 md:hidden">
+            <ThemeToggle />
+            <button onClick={() => setMobileOpen((o) => !o)} aria-label="Toggle menu">
             {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+            </button>
+          </div>
         </div>
         <AnimatePresence>
           {mobileOpen && (
@@ -164,7 +169,7 @@ export default function LandingPage() {
       </motion.header>
 
       {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-white">
+      <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-surface">
         <div className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full bg-brand-300/40 blur-3xl animate-blob" />
         <div className="pointer-events-none absolute right-0 top-10 h-72 w-72 rounded-full bg-accent-300/40 blur-3xl animate-blob [animation-delay:2s]" />
         <div className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl animate-blob [animation-delay:4s]" />

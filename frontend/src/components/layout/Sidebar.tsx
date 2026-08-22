@@ -38,7 +38,7 @@ function NavLinks({ items, onNavigate }: { items: NavItem[]; onNavigate?: () => 
 export function Sidebar({ items, mobileOpen, onClose }: SidebarProps) {
   return (
     <>
-      <aside className="hidden w-64 shrink-0 border-r border-ink-200 bg-white lg:flex lg:flex-col">
+      <aside className="hidden w-64 shrink-0 border-r border-ink-200 bg-surface lg:flex lg:flex-col">
         <div className="flex h-16 items-center px-5">
           <Logo />
         </div>
@@ -49,8 +49,8 @@ export function Sidebar({ items, mobileOpen, onClose }: SidebarProps) {
 
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-ink-900/40" onClick={onClose} />
-          <aside className="relative z-10 flex h-full w-72 flex-col bg-white shadow-xl">
+          <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+          <aside className="relative z-10 flex h-full w-72 flex-col bg-surface shadow-xl">
             <div className="flex h-16 items-center justify-between px-5">
               <Logo />
               <button onClick={onClose} className="rounded-lg p-1 text-ink-400 hover:bg-ink-100" aria-label="Close menu">

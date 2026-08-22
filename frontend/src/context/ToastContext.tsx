@@ -39,7 +39,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 ? "bg-emerald-600 text-white"
                 : toast.variant === "error"
                   ? "bg-red-600 text-white"
-                  : "bg-ink-800 text-white"
+                  : "bg-[#1e293b] text-white"
             }`}
           >
             {toast.message}

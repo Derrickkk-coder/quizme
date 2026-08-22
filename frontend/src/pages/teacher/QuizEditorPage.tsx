@@ -370,7 +370,7 @@ export default function QuizEditorPage() {
                 <div className="mb-4 grid grid-cols-2 gap-2">
                   <button
                     type="button"
-                    className="flex flex-col items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-3 text-center transition-colors hover:border-brand-300 hover:bg-brand-50"
+                    className="flex flex-col items-center gap-1.5 rounded-xl border border-ink-200 bg-surface px-3 py-3 text-center transition-colors hover:border-brand-300 hover:bg-brand-50"
                     onClick={() => setPickerOpen(true)}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
@@ -380,7 +380,7 @@ export default function QuizEditorPage() {
                   </button>
                   <button
                     type="button"
-                    className="flex flex-col items-center gap-1.5 rounded-xl border border-ink-200 bg-white px-3 py-3 text-center transition-colors hover:border-accent-300 hover:bg-accent-50"
+                    className="flex flex-col items-center gap-1.5 rounded-xl border border-ink-200 bg-surface px-3 py-3 text-center transition-colors hover:border-accent-300 hover:bg-accent-50"
                     onClick={() => setAutoGenOpen(true)}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent-50 text-accent-600">

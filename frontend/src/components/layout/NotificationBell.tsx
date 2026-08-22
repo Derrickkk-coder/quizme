@@ -49,7 +49,7 @@ export function NotificationBell() {
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="fixed left-4 right-4 top-16 z-40 w-auto rounded-2xl border border-ink-100 bg-white shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
+          <div className="fixed left-4 right-4 top-16 z-40 w-auto rounded-2xl border border-ink-100 bg-surface shadow-xl sm:absolute sm:left-auto sm:right-0 sm:top-auto sm:mt-2 sm:w-80">
             <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
               <p className="text-sm font-semibold text-ink-900">Notifications</p>
               <button onClick={handleMarkAll} className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700">

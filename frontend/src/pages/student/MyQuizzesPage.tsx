@@ -39,7 +39,7 @@ export default function MyQuizzesPage() {
             key={t.key}
             onClick={() => setTab(t.key)}
             className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-              tab === t.key ? "bg-white text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-700"
+              tab === t.key ? "bg-surface text-ink-900 shadow-sm" : "text-ink-500 hover:text-ink-700"
             }`}
           >
             <t.icon className="h-4 w-4" />

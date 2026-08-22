@@ -3,6 +3,7 @@ import { Menu, LogOut, User as UserIcon, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { NotificationBell } from "./NotificationBell";
+import { ThemeToggle } from "../ui/ThemeToggle";
 import { initials } from "../../utils/format";
 
 export function Topbar({ onMenuClick, title }: { onMenuClick: () => void; title?: string }) {
@@ -18,7 +19,7 @@ export function Topbar({ onMenuClick, title }: { onMenuClick: () => void; title?
   const profilePath = user?.role === "ADMIN" ? "/app/admin/profile" : user?.role === "TEACHER" ? "/app/teacher/profile" : "/app/student/profile";
 
   return (
-    <header className="flex h-16 items-center justify-between gap-4 border-b border-ink-200 bg-white px-4 lg:px-6">
+    <header className="flex h-16 items-center justify-between gap-4 border-b border-ink-200 bg-surface px-4 lg:px-6">
       <div className="flex items-center gap-3">
         <button onClick={onMenuClick} className="rounded-lg p-2 text-ink-500 hover:bg-ink-100 lg:hidden" aria-label="Open menu">
           <Menu className="h-5 w-5" />
@@ -27,6 +28,7 @@ export function Topbar({ onMenuClick, title }: { onMenuClick: () => void; title?
       </div>
 
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <NotificationBell />
 
         <div className="relative">
@@ -44,7 +46,7 @@ export function Topbar({ onMenuClick, title }: { onMenuClick: () => void; title?
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-30" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 z-40 mt-2 w-48 rounded-xl border border-ink-100 bg-white py-1 shadow-xl">
+              <div className="absolute right-0 z-40 mt-2 w-48 rounded-xl border border-ink-100 bg-surface py-1 shadow-xl">
                 <button
                   onClick={() => {
                     setMenuOpen(false);

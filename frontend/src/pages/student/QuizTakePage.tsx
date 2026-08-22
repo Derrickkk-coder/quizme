@@ -188,7 +188,7 @@ export default function QuizTakePage() {
 
   return (
     <div className="min-h-screen bg-ink-50">
-      <header className="sticky top-0 z-20 border-b border-ink-200 bg-white">
+      <header className="sticky top-0 z-20 border-b border-ink-200 bg-surface">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <Logo markClassName="h-7 w-7" />

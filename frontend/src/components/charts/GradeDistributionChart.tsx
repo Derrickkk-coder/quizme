@@ -1,4 +1,5 @@
 import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { useChartTheme } from "../../utils/useChartTheme";
 import { EmptyState } from "../ui/EmptyState";
 
 interface DataPoint {
@@ -10,6 +11,7 @@ const COLOR_MINE = "#60a5fa";
 const COLOR_OTHERS = "#1d4ed8";
 
 export function GradeDistributionChart({ data, myGrade, height = 260 }: { data: DataPoint[]; myGrade: string | null; height?: number }) {
+  const theme = useChartTheme();
   if (!data.length || data.every((d) => d.count === 0)) {
     return <EmptyState title="No class data yet" description="This will fill in once your classmates start submitting quizzes." />;
   }
@@ -18,12 +20,13 @@ export function GradeDistributionChart({ data, myGrade, height = 260 }: { data: 
     <div>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={data} margin={{ top: 20, right: 8, left: -20, bottom: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-          <XAxis dataKey="grade" tick={{ fontSize: 12, fill: "#64748b" }} />
-          <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: "#64748b" }} />
+          <CartesianGrid strokeDasharray="3 3" stroke={theme.grid} vertical={false} />
+          <XAxis dataKey="grade" tick={{ fontSize: 12, fill: theme.tick }} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 12, fill: theme.tick }} />
           <Tooltip
             formatter={(value: number, _name, item) => [`${value} student${value === 1 ? "" : "s"}`, item.payload.grade === myGrade ? "Your grade" : "Grade"]}
-            contentStyle={{ borderRadius: 12, border: "1px solid #e2e8f0", fontSize: 13 }}
+            contentStyle={{ borderRadius: 12, border: `1px solid ${theme.tooltipBorder}`, backgroundColor: theme.tooltipBg, fontSize: 13 }}
+            labelStyle={{ color: theme.tick }}
           />
           <Bar dataKey="count" radius={[6, 6, 0, 0]}>
             {data.map((d, i) => {

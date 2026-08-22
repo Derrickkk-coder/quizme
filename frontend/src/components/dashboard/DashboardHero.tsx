@@ -18,7 +18,7 @@ function getGreeting(): string {
 
 export function DashboardHero({ eyebrow, name, subtitle, icon, cta }: DashboardHeroProps) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-50 via-white to-accent-50 p-6 sm:p-8">
+    <div className="relative overflow-hidden rounded-3xl border border-brand-100 bg-gradient-to-br from-brand-50 via-surface to-accent-50 p-6 sm:p-8">
       <div className="flex items-center justify-between gap-6">
         <div className="min-w-0">
           <p className="text-xs font-semibold uppercase tracking-wide text-brand-600">{eyebrow}</p>
@@ -34,7 +34,7 @@ export function DashboardHero({ eyebrow, name, subtitle, icon, cta }: DashboardH
           )}
         </div>
         <div className="hidden shrink-0 lg:flex">
-          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-white/70 shadow-inner ring-4 ring-white xl:h-32 xl:w-32">
+          <div className="flex h-28 w-28 items-center justify-center rounded-full bg-white/70 shadow-inner ring-4 ring-white dark:bg-white/5 dark:ring-white/10 xl:h-32 xl:w-32">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-white xl:h-24 xl:w-24">
               {icon}
             </div>
