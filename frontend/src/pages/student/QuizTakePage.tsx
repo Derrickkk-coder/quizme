@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, Maximize, ShieldAlert } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, Maximize, Minimize2, ShieldAlert } from "lucide-react";
 import { getActiveAttempt, recordTabSwitch, saveAnswer, startAttempt, submitAttempt } from "../../api/student";
 import { apiErrorMessage } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
@@ -24,10 +24,16 @@ export default function QuizTakePage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [exitFsConfirmOpen, setExitFsConfirmOpen] = useState(false);
+  const [fsRequired] = useState(
+    () => typeof document !== "undefined" && !!(document.fullscreenEnabled || (document as any).webkitFullscreenEnabled)
+  );
 
   const startedRef = useRef(false);
   const submittedRef = useRef(false);
   const tabSwitchRef = useRef(0);
+  const fsAttemptedRef = useRef(false);
+  const wasFullscreenRef = useRef(false);
 
   const loadAttempt = useCallback(async () => {
     if (!quizId) return;
@@ -61,16 +67,20 @@ export default function QuizTakePage() {
   }, [loadAttempt]);
 
   const handleSubmit = useCallback(
-    async (auto: boolean) => {
+    async (reason: "manual" | "timeout" | "fullscreen-exit") => {
       if (!attempt || submittedRef.current) return;
       submittedRef.current = true;
       setSubmitting(true);
       try {
         const res = await submitAttempt(attempt.id, tabSwitchRef.current);
-        if (document.fullscreenElement) {
-          document.exitFullscreen().catch(() => {});
-        }
-        showToast(auto ? "Time's up — your quiz was submitted automatically." : "Quiz submitted successfully.", "success");
+        exitFullscreenNow();
+        const message =
+          reason === "timeout"
+            ? "Time's up — your quiz was submitted automatically."
+            : reason === "fullscreen-exit"
+              ? "You exited fullscreen — your quiz was submitted automatically."
+              : "Quiz submitted successfully.";
+        showToast(message, reason === "fullscreen-exit" ? "error" : "success");
         navigate(`/app/student/results/${res.data.id}`, { replace: true });
       } catch (err) {
         showToast(apiErrorMessage(err), "error");
@@ -88,7 +98,7 @@ export default function QuizTakePage() {
       setRemainingSeconds((prev) => {
         if (prev <= 1) {
           clearInterval(interval);
-          handleSubmit(true);
+          handleSubmit("timeout");
           return 0;
         }
         return prev - 1;
@@ -125,19 +135,51 @@ export default function QuizTakePage() {
 
   useEffect(() => {
     function handleFullscreenChange() {
-      setIsFullscreen(!!document.fullscreenElement);
+      const fs = !!(document.fullscreenElement || (document as any).webkitFullscreenElement);
+      setIsFullscreen(fs);
     }
     document.addEventListener("fullscreenchange", handleFullscreenChange);
-    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", handleFullscreenChange);
+    };
   }, []);
 
+  // Any exit from fullscreen — the dedicated button, Esc, a swipe gesture, anything —
+  // is treated as "the student is done" and auto-submits the quiz.
+  useEffect(() => {
+    if (!attempt) return;
+    if (wasFullscreenRef.current && !isFullscreen && !submittedRef.current) {
+      handleSubmit("fullscreen-exit");
+    }
+    wasFullscreenRef.current = isFullscreen;
+  }, [isFullscreen, attempt, handleSubmit]);
+
   async function handleEnterFullscreen() {
+    const el = document.documentElement as any;
     try {
-      await document.documentElement.requestFullscreen();
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
     } catch {
       // Fullscreen may be unavailable in some browsers/environments — not fatal.
     }
   }
+
+  function exitFullscreenNow() {
+    const doc = document as any;
+    if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    else if (doc.webkitFullscreenElement && doc.webkitExitFullscreen) doc.webkitExitFullscreen();
+  }
+
+  // Try to enter fullscreen automatically as soon as the quiz loads. This relies on the
+  // "start quiz" click's user-activation carrying over through the client-side route change;
+  // if it doesn't (e.g. a page refresh) the fullscreen gate screen below asks for one explicit tap instead.
+  useEffect(() => {
+    if (!attempt || fsAttemptedRef.current || !fsRequired) return;
+    fsAttemptedRef.current = true;
+    handleEnterFullscreen();
+  }, [attempt, fsRequired]);
 
   async function handleSelectOption(questionId: string, optionId: string) {
     if (!attempt) return;
@@ -186,6 +228,24 @@ export default function QuizTakePage() {
   const isLast = currentIndex === totalQuestions - 1;
   const isLow = remainingSeconds <= 60;
 
+  if (fsRequired && !isFullscreen && !submitting) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-ink-50 px-4">
+        <div className="card max-w-md p-8 text-center">
+          <Maximize className="mx-auto h-10 w-10 text-brand-500" />
+          <p className="mt-4 font-semibold text-ink-900">This quiz must be taken in fullscreen</p>
+          <p className="mt-1 text-sm text-ink-500">
+            Fullscreen mode helps keep the quiz secure. Exiting it once you've started will submit your quiz
+            immediately, so only do that when you're done.
+          </p>
+          <button className="btn-primary mt-6" onClick={handleEnterFullscreen}>
+            <Maximize className="h-4 w-4" /> Enter Fullscreen &amp; Start
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-ink-50">
       <header className="sticky top-0 z-20 border-b border-ink-200 bg-surface">
@@ -198,10 +258,13 @@ export default function QuizTakePage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            {!isFullscreen && (
-              <button onClick={handleEnterFullscreen} className="btn-secondary btn-sm">
-                <Maximize className="h-3.5 w-3.5" /> Fullscreen
+            {fsRequired && isFullscreen && (
+              <button onClick={() => setExitFsConfirmOpen(true)} className="btn-secondary btn-sm text-red-600 hover:bg-red-50">
+                <Minimize2 className="h-3.5 w-3.5" /> Exit Fullscreen
               </button>
+            )}
+            {!fsRequired && (
+              <span className="hidden text-xs text-ink-400 sm:inline">Fullscreen isn't supported on this browser</span>
             )}
             <div className={`flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold tabular-nums ${isLow ? "animate-pulse bg-red-50 text-red-600" : "bg-brand-50 text-brand-700"}`}>
               {formatSeconds(remainingSeconds)}
@@ -333,8 +396,21 @@ export default function QuizTakePage() {
         message={`You've answered ${answeredCount} of ${totalQuestions} questions. Once submitted, you can't change your answers. Are you sure you want to submit?`}
         confirmLabel="Submit"
         loading={submitting}
-        onConfirm={() => handleSubmit(false)}
+        onConfirm={() => handleSubmit("manual")}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={exitFsConfirmOpen}
+        title="Exit fullscreen & submit?"
+        message="Leaving fullscreen mode submits your quiz immediately — you won't be able to resume or change your answers. Only continue if you're finished."
+        confirmLabel="Exit & Submit"
+        loading={submitting}
+        onConfirm={() => {
+          setExitFsConfirmOpen(false);
+          exitFullscreenNow();
+        }}
+        onCancel={() => setExitFsConfirmOpen(false)}
       />
     </div>
   );
