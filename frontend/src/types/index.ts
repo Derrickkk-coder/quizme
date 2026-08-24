@@ -1,6 +1,6 @@
 export type Role = "STUDENT" | "TEACHER" | "ADMIN";
 export type Difficulty = "EASY" | "MEDIUM" | "HARD";
-export type QuestionType = "SINGLE_CHOICE" | "MULTIPLE_SELECT";
+export type QuestionType = "SINGLE_CHOICE" | "MULTIPLE_SELECT" | "SHORT_ANSWER";
 export type QuizStatus = "DRAFT" | "SCHEDULED" | "ACTIVE" | "CLOSED";
 export type AttemptStatus = "IN_PROGRESS" | "SUBMITTED" | "AUTO_SUBMITTED";
 export type NotificationType =
@@ -84,6 +84,7 @@ export interface Question {
   difficulty: Difficulty;
   marks: number;
   explanation: string | null;
+  modelAnswer?: string | null;
   createdAt: string;
   options: QuestionOption[];
   subject?: Subject;
@@ -141,9 +142,12 @@ export interface AttemptQuestion {
   marks: number;
   options: { id: string; text: string; isCorrect?: boolean }[];
   selectedOptionIds: string[];
+  textAnswer?: string;
   isCorrect?: boolean;
   marksAwarded?: number;
   explanation?: string | null;
+  needsReview?: boolean;
+  feedback?: string | null;
 }
 
 export interface AttemptInProgress {
@@ -195,6 +199,7 @@ export interface QuizAttemptSummary {
   percentage: number | null;
   grade: string | null;
   teacherFeedback?: string | null;
+  hasPendingReview?: boolean;
   quiz: Quiz;
   student?: { id: string; studentCode: string; class?: SchoolClass; user: User };
 }

@@ -12,6 +12,7 @@ import { notify } from "../lib/notify";
 import { recordAudit } from "../lib/audit";
 import { toCsv } from "../utils/csv";
 import { safeUserSelect } from "../utils/safeSelects";
+import { gradeForPercent } from "../lib/grade";
 
 const router = Router();
 router.use(authenticate, requireRole(Role.TEACHER));
@@ -20,6 +21,7 @@ const listQuerySchema = paginationSchema.extend({
   quizId: z.string().optional(),
   classId: z.string().optional(),
   studentId: z.string().optional(),
+  pendingReview: z.coerce.boolean().optional(),
 });
 
 router.get(
@@ -27,13 +29,14 @@ router.get(
   validateQuery(listQuerySchema),
   asyncHandler(async (req, res) => {
     const teacherId = await requireTeacherProfileId(req);
-    const { page, pageSize, quizId, classId, studentId } = req.query as unknown as z.infer<typeof listQuerySchema>;
+    const { page, pageSize, quizId, classId, studentId, pendingReview } = req.query as unknown as z.infer<typeof listQuerySchema>;
 
     const where: any = {
       status: { in: [AttemptStatus.SUBMITTED, AttemptStatus.AUTO_SUBMITTED] },
       quiz: { teacherId, ...(classId ? { classId } : {}) },
       ...(quizId ? { quizId } : {}),
       ...(studentId ? { studentId } : {}),
+      ...(pendingReview ? { hasPendingReview: true } : {}),
     };
 
     const [total, attempts] = await Promise.all([
@@ -156,6 +159,78 @@ router.patch(
     await recordAudit({ actorId: req.user!.sub, action: "FEEDBACK_ADDED", entityType: "QuizAttempt", entityId: attempt.id, req });
 
     res.json({ data: updated });
+  })
+);
+
+const gradeAnswerSchema = z.object({
+  marksAwarded: z.number().int().min(0),
+  teacherNote: z.string().max(2000).optional(),
+});
+
+router.patch(
+  "/:attemptId/answers/:answerId/grade",
+  validateBody(gradeAnswerSchema),
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const attempt = await prisma.quizAttempt.findFirst({
+      where: { id: req.params.attemptId, quiz: { teacherId } },
+      include: {
+        quiz: true,
+        student: { include: { user: { select: safeUserSelect } } },
+        answers: { include: { question: true } },
+      },
+    });
+    if (!attempt) throw new HttpError(404, "Result not found");
+
+    const answer = attempt.answers.find((a) => a.id === req.params.answerId);
+    if (!answer) throw new HttpError(404, "Answer not found");
+
+    const qq = await prisma.quizQuestion.findFirst({ where: { quizId: attempt.quizId, questionId: answer.questionId } });
+    const maxMarks = qq?.marksOverride ?? answer.question.marks;
+    const marksAwarded = Math.min(req.body.marksAwarded, maxMarks);
+
+    await prisma.answer.update({
+      where: { id: answer.id },
+      data: {
+        marksAwarded,
+        isCorrect: marksAwarded >= maxMarks,
+        needsReview: false,
+        ...(req.body.teacherNote !== undefined ? { teacherNote: req.body.teacherNote } : {}),
+      },
+    });
+
+    // Re-sum the whole attempt now that one answer's marks changed.
+    const allAnswers = await prisma.answer.findMany({ where: { attemptId: attempt.id } });
+    const score = allAnswers.reduce((sum, a) => sum + (a.marksAwarded ?? 0), 0);
+    const percentage = attempt.totalMarks && attempt.totalMarks > 0 ? (score / attempt.totalMarks) * 100 : 0;
+    const grade = await gradeForPercent(percentage);
+    const hasPendingReview = allAnswers.some((a) => a.needsReview);
+
+    const updatedAttempt = await prisma.quizAttempt.update({
+      where: { id: attempt.id },
+      data: { score, percentage, grade, hasPendingReview },
+      include: { answers: { include: { question: { include: { options: true } } } } },
+    });
+
+    if (!hasPendingReview && attempt.quiz.showResultsImmediately) {
+      await notify({
+        userId: attempt.student.user.id,
+        type: NotificationType.RESULT_AVAILABLE,
+        title: "Result finalized",
+        message: `Your result for "${attempt.quiz.title}" has been fully graded: ${Math.round(percentage)}% (${grade}).`,
+      });
+    }
+
+    await recordAudit({
+      actorId: req.user!.sub,
+      action: "ANSWER_GRADED",
+      entityType: "Answer",
+      entityId: answer.id,
+      metadata: { marksAwarded, maxMarks },
+      req,
+    });
+
+    res.json({ data: updatedAttempt });
   })
 );
 

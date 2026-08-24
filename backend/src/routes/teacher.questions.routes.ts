@@ -94,7 +94,8 @@ const questionSchema = z.object({
   difficulty: z.nativeEnum(Difficulty).default(Difficulty.MEDIUM),
   marks: z.number().int().min(1).default(1),
   explanation: z.string().optional(),
-  options: z.array(optionSchema).min(2).max(6),
+  modelAnswer: z.string().optional(),
+  options: z.array(optionSchema).max(6).optional().default([]),
 });
 
 export function assertValidCorrectness(type: QuestionType, options: { isCorrect: boolean }[]) {
@@ -113,19 +114,36 @@ export function assertValidCorrectness(type: QuestionType, options: { isCorrect:
   }
 }
 
+// SHORT_ANSWER questions skip the options entirely and need a model answer
+// instead, used as the grading rubric handed to the AI grader.
+function assertValidQuestionBody(type: QuestionType, options: { isCorrect: boolean }[], modelAnswer?: string) {
+  if (type === QuestionType.SHORT_ANSWER) {
+    if (!modelAnswer || !modelAnswer.trim()) {
+      throw new HttpError(400, "Short answer questions need a model answer for AI grading");
+    }
+    return;
+  }
+  if (options.length < 2) {
+    throw new HttpError(400, "This question type needs at least 2 answer options");
+  }
+  assertValidCorrectness(type, options);
+}
+
 router.post(
   "/",
   validateBody(questionSchema),
   asyncHandler(async (req, res) => {
     const teacherId = await requireTeacherProfileId(req);
     const { options, ...rest } = req.body;
-    assertValidCorrectness(rest.type, options);
+    assertValidQuestionBody(rest.type, options, rest.modelAnswer);
+    const isShortAnswer = rest.type === QuestionType.SHORT_ANSWER;
 
     const question = await prisma.question.create({
       data: {
         ...rest,
+        modelAnswer: isShortAnswer ? rest.modelAnswer : null,
         teacherId,
-        options: { create: options.map((o: any, i: number) => ({ ...o, order: i })) },
+        options: isShortAnswer ? undefined : { create: options.map((o: any, i: number) => ({ ...o, order: i })) },
       },
       include: { options: { orderBy: { order: "asc" } } },
     });
@@ -209,7 +227,8 @@ const updateQuestionSchema = z.object({
   difficulty: z.nativeEnum(Difficulty).optional(),
   marks: z.number().int().min(1).optional(),
   explanation: z.string().optional(),
-  options: z.array(optionSchema).min(2).max(6).optional(),
+  modelAnswer: z.string().optional(),
+  options: z.array(optionSchema).max(6).optional(),
 });
 
 router.patch(
@@ -221,11 +240,22 @@ router.patch(
     if (!existing) throw new HttpError(404, "Question not found");
 
     const { options, ...rest } = req.body;
-    if (options) assertValidCorrectness(rest.type ?? existing.type, options);
+    const effectiveType = rest.type ?? existing.type;
+    const isShortAnswer = effectiveType === QuestionType.SHORT_ANSWER;
+    const effectiveModelAnswer = rest.modelAnswer ?? existing.modelAnswer ?? undefined;
+
+    if (options || rest.type) {
+      assertValidQuestionBody(effectiveType, options ?? [], effectiveModelAnswer);
+    }
 
     const question = await prisma.$transaction(async (tx) => {
-      await tx.question.update({ where: { id: existing.id }, data: rest });
-      if (options) {
+      await tx.question.update({
+        where: { id: existing.id },
+        data: { ...rest, modelAnswer: isShortAnswer ? effectiveModelAnswer : null },
+      });
+      if (isShortAnswer) {
+        await tx.questionOption.deleteMany({ where: { questionId: existing.id } });
+      } else if (options) {
         await tx.questionOption.deleteMany({ where: { questionId: existing.id } });
         await tx.questionOption.createMany({
           data: options.map((o: any, i: number) => ({ ...o, questionId: existing.id, order: i })),

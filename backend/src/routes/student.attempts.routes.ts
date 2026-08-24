@@ -44,7 +44,7 @@ async function serializeAttempt(attemptId: string) {
       deadlineAt: attempt.deadlineAt,
       remainingSeconds,
       totalQuestions: questions.length,
-      answeredCount: attempt.answers.filter((a) => a.selectedOptionIds.length > 0).length,
+      answeredCount: attempt.answers.filter((a) => a.selectedOptionIds.length > 0 || (a.textAnswer && a.textAnswer.trim())).length,
       questions,
     };
   }
@@ -62,7 +62,10 @@ async function serializeAttempt(attemptId: string) {
           marks: qq.marksOverride ?? qq.question.marks,
           marksAwarded: answer?.marksAwarded ?? 0,
           selectedOptionIds: answer?.selectedOptionIds ?? [],
+          textAnswer: answer?.textAnswer ?? null,
           isCorrect: answer?.isCorrect ?? false,
+          needsReview: answer?.needsReview ?? false,
+          feedback: attempt.quiz.showExplanations ? (answer?.teacherNote ?? answer?.aiSuggestedFeedback ?? null) : null,
           explanation: attempt.quiz.showExplanations ? qq.question.explanation : null,
           options: entry.optionOrder.map((optId) => {
             const opt = qq.question.options.find((o) => o.id === optId)!;
@@ -128,7 +131,8 @@ router.get(
 
 const answerSchema = z.object({
   questionId: z.string(),
-  selectedOptionIds: z.array(z.string()),
+  selectedOptionIds: z.array(z.string()).optional(),
+  textAnswer: z.string().max(5000).optional(),
 });
 
 router.post(
@@ -136,7 +140,10 @@ router.post(
   validateBody(answerSchema),
   asyncHandler(async (req, res) => {
     const studentId = await requireStudentProfileId(req);
-    await saveAnswer(req.params.id, studentId, req.body.questionId, req.body.selectedOptionIds);
+    await saveAnswer(req.params.id, studentId, req.body.questionId, {
+      selectedOptionIds: req.body.selectedOptionIds,
+      textAnswer: req.body.textAnswer,
+    });
     res.json({ data: await serializeAttempt(req.params.id) });
   })
 );

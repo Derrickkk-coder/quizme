@@ -36,8 +36,12 @@ export async function getAttempt(id: string): Promise<{ data: Attempt }> {
   return data;
 }
 
-export async function saveAnswer(attemptId: string, questionId: string, selectedOptionIds: string[]): Promise<{ data: Attempt }> {
-  const { data } = await apiClient.post(`/student/attempts/${attemptId}/answers`, { questionId, selectedOptionIds });
+export async function saveAnswer(
+  attemptId: string,
+  questionId: string,
+  answer: { selectedOptionIds?: string[]; textAnswer?: string }
+): Promise<{ data: Attempt }> {
+  const { data } = await apiClient.post(`/student/attempts/${attemptId}/answers`, { questionId, ...answer });
   return data;
 }
 

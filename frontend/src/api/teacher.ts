@@ -69,6 +69,7 @@ export interface QuestionPayload {
   difficulty: Difficulty;
   marks: number;
   explanation?: string;
+  modelAnswer?: string;
   options: { text: string; isCorrect: boolean }[];
 }
 
@@ -269,6 +270,7 @@ export interface ListResultsParams {
   quizId?: string;
   classId?: string;
   studentId?: string;
+  pendingReview?: boolean;
 }
 
 export async function listTeacherResults(params: ListResultsParams): Promise<Paginated<QuizAttemptSummary>> {
@@ -283,6 +285,15 @@ export async function getTeacherResult(attemptId: string): Promise<{ data: QuizA
 
 export async function sendResultFeedback(attemptId: string, teacherFeedback: string): Promise<void> {
   await apiClient.patch(`/teacher/results/${attemptId}/feedback`, { teacherFeedback });
+}
+
+export async function gradeShortAnswer(
+  attemptId: string,
+  answerId: string,
+  payload: { marksAwarded: number; teacherNote?: string }
+): Promise<{ data: QuizAttemptSummary & { answers: any[] } }> {
+  const { data } = await apiClient.patch(`/teacher/results/${attemptId}/answers/${answerId}/grade`, payload);
+  return data;
 }
 
 export async function downloadTeacherResultsCsv(params: Record<string, string | undefined>, filename = "results.csv"): Promise<void> {

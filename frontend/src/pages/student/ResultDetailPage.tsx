@@ -68,33 +68,52 @@ export default function ResultDetailPage() {
                     <p className="text-sm font-semibold text-ink-900">
                       {q.questionNumber}. {q.text}
                     </p>
-                    <span className={`shrink-0 rounded-full p-1 ${q.isCorrect ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
-                      {q.isCorrect ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
-                    </span>
+                    {q.type === "SHORT_ANSWER" ? (
+                      <span className="shrink-0 rounded-full bg-ink-100 px-2 py-1 text-xs font-semibold text-ink-600">
+                        {q.marksAwarded ?? 0}/{q.marks}
+                      </span>
+                    ) : (
+                      <span className={`shrink-0 rounded-full p-1 ${q.isCorrect ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                        {q.isCorrect ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />}
+                      </span>
+                    )}
                   </div>
-                  <div className="mt-3 space-y-2">
-                    {q.options.map((opt) => {
-                      const isSelected = q.selectedOptionIds.includes(opt.id);
-                      const isCorrectOption = opt.isCorrect;
-                      return (
-                        <div
-                          key={opt.id}
-                          className={`rounded-lg border px-3 py-2 text-sm ${
-                            isCorrectOption
-                              ? "border-emerald-300 bg-emerald-50 text-emerald-800"
-                              : isSelected
-                                ? "border-red-300 bg-red-50 text-red-800"
-                                : "border-ink-100 text-ink-600"
-                          }`}
-                        >
-                          {opt.text}
-                          {isSelected && <span className="ml-2 text-xs font-semibold">(Your answer)</span>}
-                          {isCorrectOption && <span className="ml-2 text-xs font-semibold">(Correct answer)</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {q.explanation && <p className="mt-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">{q.explanation}</p>}
+                  {q.type === "SHORT_ANSWER" ? (
+                    <div className="mt-3 space-y-2">
+                      <div className="rounded-lg border border-ink-100 px-3 py-2 text-sm text-ink-700">
+                        {q.textAnswer?.trim() ? q.textAnswer : <span className="italic text-ink-400">No answer given</span>}
+                      </div>
+                      <p className="text-xs text-ink-400">
+                        {q.marksAwarded ?? 0}/{q.marks} marks
+                        {q.needsReview ? " · awaiting your teacher's final review" : ""}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      {q.options.map((opt) => {
+                        const isSelected = q.selectedOptionIds.includes(opt.id);
+                        const isCorrectOption = opt.isCorrect;
+                        return (
+                          <div
+                            key={opt.id}
+                            className={`rounded-lg border px-3 py-2 text-sm ${
+                              isCorrectOption
+                                ? "border-emerald-300 bg-emerald-50 text-emerald-800"
+                                : isSelected
+                                  ? "border-red-300 bg-red-50 text-red-800"
+                                  : "border-ink-100 text-ink-600"
+                            }`}
+                          >
+                            {opt.text}
+                            {isSelected && <span className="ml-2 text-xs font-semibold">(Your answer)</span>}
+                            {isCorrectOption && <span className="ml-2 text-xs font-semibold">(Correct answer)</span>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {q.feedback && <p className="mt-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">{q.feedback}</p>}
+                  {!q.feedback && q.explanation && <p className="mt-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">{q.explanation}</p>}
                 </div>
               ))}
             </div>

@@ -15,14 +15,16 @@ export default function ResultsPage() {
   const [page, setPage] = useState(1);
   const [quizId, setQuizId] = useState("");
   const [classId, setClassId] = useState("");
+  const [pendingOnly, setPendingOnly] = useState(false);
   const { showToast } = useToast();
 
   const classesQuery = useQuery({ queryKey: ["teacher", "classes"], queryFn: getTeacherClasses });
   const quizzesQuery = useQuery({ queryKey: ["teacher", "quizzes", "all"], queryFn: () => listTeacherQuizzes({ pageSize: 100 }) });
 
   const resultsQuery = useQuery({
-    queryKey: ["teacher", "results", { page, quizId, classId }],
-    queryFn: () => listTeacherResults({ page, pageSize: 10, quizId: quizId || undefined, classId: classId || undefined }),
+    queryKey: ["teacher", "results", { page, quizId, classId, pendingOnly }],
+    queryFn: () =>
+      listTeacherResults({ page, pageSize: 10, quizId: quizId || undefined, classId: classId || undefined, pendingReview: pendingOnly || undefined }),
   });
 
   async function handleExport() {
@@ -58,6 +60,15 @@ export default function ResultsPage() {
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
+        <label className="flex items-center gap-2 text-sm text-ink-600">
+          <input
+            type="checkbox"
+            className="h-4 w-4 rounded text-brand-600"
+            checked={pendingOnly}
+            onChange={(e) => { setPendingOnly(e.target.checked); setPage(1); }}
+          />
+          Needs review
+        </label>
       </div>
 
       {resultsQuery.isLoading ? (
@@ -82,8 +93,9 @@ export default function ResultsPage() {
                 {resultsQuery.data.data.map((r) => (
                   <tr key={r.id} className="border-t border-ink-100 hover:bg-ink-50/60">
                     <td className="px-4 py-3">
-                      <Link to={`/app/teacher/results/${r.id}`} className="font-medium text-ink-800 hover:text-brand-600">
+                      <Link to={`/app/teacher/results/${r.id}`} className="flex items-center gap-2 font-medium text-ink-800 hover:text-brand-600">
                         {r.student?.user.name}
+                        {r.hasPendingReview && <span className="badge bg-amber-100 text-amber-700">Needs review</span>}
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-ink-600">{r.quiz.title}</td>

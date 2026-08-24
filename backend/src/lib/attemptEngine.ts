@@ -1,8 +1,9 @@
-import { AttemptStatus, NotificationType, QuizStatus } from "@prisma/client";
+import { AttemptStatus, NotificationType, QuestionType, QuizStatus } from "@prisma/client";
 import { prisma } from "./prisma";
 import { HttpError } from "../middleware/errorHandler";
 import { computeEffectiveStatus } from "./quizStatus";
 import { gradeForPercent } from "./grade";
+import { gradeShortAnswers } from "./gemini";
 import { notify } from "./notify";
 import { recordAudit } from "./audit";
 import { safeUserSelect } from "../utils/safeSelects";
@@ -109,13 +110,18 @@ export async function loadAttemptForStudent(attemptId: string, studentId: string
   return attempt;
 }
 
-export async function buildQuestionPayload(quiz: { questions: any[] }, questionOrder: QuestionOrderEntry[], savedAnswers: { questionId: string; selectedOptionIds: string[] }[]) {
+export async function buildQuestionPayload(
+  quiz: { questions: any[] },
+  questionOrder: QuestionOrderEntry[],
+  savedAnswers: { questionId: string; selectedOptionIds: string[]; textAnswer?: string | null }[]
+) {
   const questionMap = new Map(quiz.questions.map((qq: any) => [qq.questionId as string, qq]));
-  const answerMap = new Map(savedAnswers.map((a) => [a.questionId, a.selectedOptionIds]));
+  const answerMap = new Map(savedAnswers.map((a) => [a.questionId, a]));
 
   return questionOrder.map((entry, index) => {
     const qq = questionMap.get(entry.questionId);
     const optionMap = new Map(qq.question.options.map((o: any) => [o.id, o]));
+    const answer = answerMap.get(entry.questionId);
     return {
       questionNumber: index + 1,
       questionId: entry.questionId,
@@ -126,12 +132,18 @@ export async function buildQuestionPayload(quiz: { questions: any[] }, questionO
         const opt: any = optionMap.get(optId);
         return { id: opt.id, text: opt.text };
       }),
-      selectedOptionIds: answerMap.get(entry.questionId) ?? [],
+      selectedOptionIds: answer?.selectedOptionIds ?? [],
+      textAnswer: answer?.textAnswer ?? "",
     };
   });
 }
 
-export async function saveAnswer(attemptId: string, studentId: string, questionId: string, selectedOptionIds: string[]) {
+export async function saveAnswer(
+  attemptId: string,
+  studentId: string,
+  questionId: string,
+  input: { selectedOptionIds?: string[]; textAnswer?: string }
+) {
   const attempt = await loadAttemptForStudent(attemptId, studentId);
   if (attempt.status !== AttemptStatus.IN_PROGRESS) {
     throw new HttpError(400, "This attempt has already been submitted");
@@ -140,11 +152,23 @@ export async function saveAnswer(attemptId: string, studentId: string, questionI
   const questionOrder = attempt.questionOrder as unknown as QuestionOrderEntry[];
   const entry = questionOrder.find((q) => q.questionId === questionId);
   if (!entry) throw new HttpError(400, "This question is not part of the current attempt");
+
+  const question = await prisma.question.findUniqueOrThrow({ where: { id: questionId }, select: { type: true } });
+
+  if (question.type === QuestionType.SHORT_ANSWER) {
+    const textAnswer = (input.textAnswer ?? "").slice(0, 5000);
+    const answer = await prisma.answer.upsert({
+      where: { attemptId_questionId: { attemptId, questionId } },
+      update: { textAnswer },
+      create: { attemptId, questionId, textAnswer },
+    });
+    return answer;
+  }
+
+  const selectedOptionIds = input.selectedOptionIds ?? [];
   if (selectedOptionIds.some((id) => !entry.optionOrder.includes(id))) {
     throw new HttpError(400, "Invalid option for this question");
   }
-
-  const question = await prisma.question.findUniqueOrThrow({ where: { id: questionId }, select: { type: true } });
   if (question.type === "SINGLE_CHOICE" && selectedOptionIds.length > 1) {
     throw new HttpError(400, "This question only allows one selected answer");
   }
@@ -197,8 +221,11 @@ async function finalizeAttempt(attemptId: string, auto: boolean, tabSwitchCount?
     totalMarks += qq.marksOverride ?? qq.question.marks;
   }
 
+  const mcqAnswers = attempt.answers.filter((a) => questionsByid.get(a.questionId)?.question.type !== QuestionType.SHORT_ANSWER);
+  const shortAnswers = attempt.answers.filter((a) => questionsByid.get(a.questionId)?.question.type === QuestionType.SHORT_ANSWER);
+
   await prisma.$transaction(
-    attempt.answers.map((answer) => {
+    mcqAnswers.map((answer) => {
       const qq = questionsByid.get(answer.questionId);
       const correctOptionIds = new Set((qq?.question.options ?? []).filter((o) => o.isCorrect).map((o) => o.id));
       const selected = new Set(answer.selectedOptionIds);
@@ -212,6 +239,67 @@ async function finalizeAttempt(attemptId: string, auto: boolean, tabSwitchCount?
     })
   );
 
+  // Short-answer questions get an initial AI grading pass so a provisional
+  // score is available immediately; the teacher reviews/overrides afterward.
+  // A blank answer gets 0 marks with nothing to review.
+  let hasPendingReview = false;
+  const answeredShortAnswers = shortAnswers.filter((a) => a.textAnswer && a.textAnswer.trim());
+  const blankShortAnswers = shortAnswers.filter((a) => !(a.textAnswer && a.textAnswer.trim()));
+
+  if (blankShortAnswers.length > 0) {
+    await prisma.$transaction(
+      blankShortAnswers.map((answer) =>
+        prisma.answer.update({ where: { id: answer.id }, data: { marksAwarded: 0, isCorrect: false, needsReview: false } })
+      )
+    );
+  }
+
+  if (answeredShortAnswers.length > 0) {
+    const gradingItems = answeredShortAnswers.map((answer) => {
+      const qq = questionsByid.get(answer.questionId)!;
+      return {
+        questionId: answer.questionId,
+        questionText: qq.question.text,
+        modelAnswer: qq.question.modelAnswer,
+        marks: qq.marksOverride ?? qq.question.marks,
+        studentAnswer: answer.textAnswer!,
+      };
+    });
+
+    try {
+      const aiGrades = await gradeShortAnswers(gradingItems);
+      const aiGradeMap = new Map(aiGrades.map((g) => [g.questionId, g]));
+
+      await prisma.$transaction(
+        answeredShortAnswers.map((answer) => {
+          const qq = questionsByid.get(answer.questionId)!;
+          const maxMarks = qq.marksOverride ?? qq.question.marks;
+          const aiGrade = aiGradeMap.get(answer.questionId);
+          const marksAwarded = aiGrade ? Math.max(0, Math.min(maxMarks, aiGrade.marksAwarded)) : 0;
+          score += marksAwarded;
+          return prisma.answer.update({
+            where: { id: answer.id },
+            data: {
+              marksAwarded,
+              aiSuggestedMarks: aiGrade ? marksAwarded : null,
+              aiSuggestedFeedback: aiGrade?.feedback ?? null,
+              needsReview: true,
+            },
+          });
+        })
+      );
+      hasPendingReview = true;
+    } catch (err) {
+      console.error("Short-answer AI grading failed, falling back to manual review:", err);
+      await prisma.$transaction(
+        answeredShortAnswers.map((answer) =>
+          prisma.answer.update({ where: { id: answer.id }, data: { marksAwarded: 0, needsReview: true } })
+        )
+      );
+      hasPendingReview = true;
+    }
+  }
+
   const percentage = totalMarks > 0 ? (score / totalMarks) * 100 : 0;
   const grade = await gradeForPercent(percentage);
 
@@ -224,6 +312,7 @@ async function finalizeAttempt(attemptId: string, auto: boolean, tabSwitchCount?
       totalMarks,
       percentage,
       grade,
+      hasPendingReview,
       ...(tabSwitchCount !== undefined ? { tabSwitchCount } : {}),
     },
   });

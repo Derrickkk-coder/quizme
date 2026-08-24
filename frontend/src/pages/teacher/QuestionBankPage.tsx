@@ -32,6 +32,7 @@ const emptyForm: QuestionPayload = {
   difficulty: "MEDIUM",
   marks: 1,
   explanation: "",
+  modelAnswer: "",
   options: [
     { text: "", isCorrect: true },
     { text: "", isCorrect: false },
@@ -205,6 +206,7 @@ export default function QuestionBankPage() {
                     <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
                       <DifficultyBadge difficulty={q.difficulty} />
                       {q.type === "MULTIPLE_SELECT" && <span className="badge-brand">Multi-select</span>}
+                      {q.type === "SHORT_ANSWER" && <span className="badge-brand">Short answer · AI-graded</span>}
                       <span className="badge-gray">{q.subject?.name}</span>
                       <span className="text-ink-400">{q.topic}</span>
                       <span className="text-ink-400">· {q.marks} mark{q.marks > 1 ? "s" : ""}</span>
@@ -255,13 +257,25 @@ export default function QuestionBankPage() {
         {previewing && (
           <div>
             <p className="text-sm font-medium text-ink-900">{previewing.text}</p>
-            <div className="mt-3 space-y-2">
-              {previewing.options.map((o) => (
-                <div key={o.id} className={`rounded-lg border px-3 py-2 text-sm ${o.isCorrect ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-ink-100 text-ink-600"}`}>
-                  {o.text} {o.isCorrect && <span className="text-xs font-semibold">(Correct)</span>}
+            {previewing.type === "SHORT_ANSWER" ? (
+              <div className="mt-3 space-y-3">
+                <div className="rounded-lg border border-dashed border-ink-200 px-3 py-6 text-center text-xs text-ink-400">
+                  Students see a free-text box here
                 </div>
-              ))}
-            </div>
+                <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+                  <span className="text-xs font-semibold uppercase tracking-wide">Model answer</span>
+                  <p className="mt-0.5">{previewing.modelAnswer}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {previewing.options.map((o) => (
+                  <div key={o.id} className={`rounded-lg border px-3 py-2 text-sm ${o.isCorrect ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-ink-100 text-ink-600"}`}>
+                    {o.text} {o.isCorrect && <span className="text-xs font-semibold">(Correct)</span>}
+                  </div>
+                ))}
+              </div>
+            )}
             {previewing.explanation && <p className="mt-3 rounded-lg bg-ink-50 px-3 py-2 text-xs text-ink-500">{previewing.explanation}</p>}
           </div>
         )}
@@ -321,6 +335,7 @@ function QuestionEditorModal({
         difficulty: editing.difficulty,
         marks: editing.marks,
         explanation: editing.explanation ?? "",
+        modelAnswer: editing.modelAnswer ?? "",
         options: editing.options.map((o) => ({ text: o.text, isCorrect: !!o.isCorrect })),
       });
     } else {
@@ -340,6 +355,14 @@ function QuestionEditorModal({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (form.type === "SHORT_ANSWER") {
+      if (!form.modelAnswer?.trim()) {
+        showToast("Add a model answer so the AI grader knows what to look for", "error");
+        return;
+      }
+      mutation.mutate();
+      return;
+    }
     if (form.options.filter((o) => o.text.trim()).length < 2) {
       showToast("Add at least two answer options", "error");
       return;
@@ -369,10 +392,21 @@ function QuestionEditorModal({
   }
 
   function changeType(type: QuestionType) {
+    if (type === "SHORT_ANSWER") {
+      setForm({ ...form, type, options: [] });
+      return;
+    }
+    const options =
+      form.options.length >= 2
+        ? form.options
+        : [
+            { text: "", isCorrect: true },
+            { text: "", isCorrect: false },
+          ];
     setForm({
       ...form,
       type,
-      options: type === "SINGLE_CHOICE" ? form.options.map((o, i) => ({ ...o, isCorrect: i === form.options.findIndex((x) => x.isCorrect) })) : form.options,
+      options: type === "SINGLE_CHOICE" ? options.map((o, i) => ({ ...o, isCorrect: i === options.findIndex((x) => x.isCorrect) })) : options,
     });
   }
 
@@ -438,6 +472,7 @@ function QuestionEditorModal({
             <select className="select" value={form.type} onChange={(e) => changeType(e.target.value as QuestionType)}>
               <option value="SINGLE_CHOICE">Multiple choice (one answer)</option>
               <option value="MULTIPLE_SELECT">Multiple selection (several answers)</option>
+              <option value="SHORT_ANSWER">Short answer (text response, AI-graded)</option>
             </select>
           </div>
           <div>
@@ -454,37 +489,51 @@ function QuestionEditorModal({
           </div>
         </div>
 
-        <div>
-          <label className="label">
-            Answer options — {form.type === "MULTIPLE_SELECT" ? "check all correct answers" : "select the correct one"}
-          </label>
-          <div className="space-y-2">
-            {form.options.map((opt, i) => (
-              <div key={i} className="flex items-center gap-2">
-                {form.type === "MULTIPLE_SELECT" ? (
-                  <input type="checkbox" checked={opt.isCorrect} onChange={() => toggleCorrect(i)} className="h-4 w-4 rounded text-brand-600" />
-                ) : (
-                  <input type="radio" name="correct-option" checked={opt.isCorrect} onChange={() => setCorrect(i)} className="h-4 w-4 text-brand-600" />
-                )}
-                <input
-                  required
-                  className="input"
-                  value={opt.text}
-                  onChange={(e) => updateOption(i, e.target.value)}
-                  placeholder={`Option ${i + 1}`}
-                />
-                <button type="button" onClick={() => removeOption(i)} className="btn-ghost btn-sm text-red-600" disabled={form.options.length <= 2}>
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
+        {form.type === "SHORT_ANSWER" ? (
+          <div>
+            <label className="label">Model answer</label>
+            <textarea
+              required
+              className="textarea"
+              value={form.modelAnswer}
+              onChange={(e) => setForm({ ...form, modelAnswer: e.target.value })}
+              placeholder="The reference answer the AI grader will compare student responses against."
+            />
+            <p className="mt-1 text-xs text-ink-400">Students see a text box instead of options. Answers are graded by AI, then reviewable by you before results are final.</p>
           </div>
-          {form.options.length < 6 && (
-            <button type="button" onClick={addOption} className="btn-secondary btn-sm mt-2">
-              <Plus className="h-4 w-4" /> Add option
-            </button>
-          )}
-        </div>
+        ) : (
+          <div>
+            <label className="label">
+              Answer options — {form.type === "MULTIPLE_SELECT" ? "check all correct answers" : "select the correct one"}
+            </label>
+            <div className="space-y-2">
+              {form.options.map((opt, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  {form.type === "MULTIPLE_SELECT" ? (
+                    <input type="checkbox" checked={opt.isCorrect} onChange={() => toggleCorrect(i)} className="h-4 w-4 rounded text-brand-600" />
+                  ) : (
+                    <input type="radio" name="correct-option" checked={opt.isCorrect} onChange={() => setCorrect(i)} className="h-4 w-4 text-brand-600" />
+                  )}
+                  <input
+                    required
+                    className="input"
+                    value={opt.text}
+                    onChange={(e) => updateOption(i, e.target.value)}
+                    placeholder={`Option ${i + 1}`}
+                  />
+                  <button type="button" onClick={() => removeOption(i)} className="btn-ghost btn-sm text-red-600" disabled={form.options.length <= 2}>
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            {form.options.length < 6 && (
+              <button type="button" onClick={addOption} className="btn-secondary btn-sm mt-2">
+                <Plus className="h-4 w-4" /> Add option
+              </button>
+            )}
+          </div>
+        )}
 
         <div>
           <label className="label">Explanation (optional)</label>

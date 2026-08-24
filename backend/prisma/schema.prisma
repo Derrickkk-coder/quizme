@@ -24,6 +24,7 @@ enum Difficulty {
 enum QuestionType {
   SINGLE_CHOICE
   MULTIPLE_SELECT
+  SHORT_ANSWER
 }
 
 enum QuizStatus {
@@ -190,6 +191,9 @@ model Question {
   difficulty   Difficulty @default(MEDIUM)
   marks        Int        @default(1)
   explanation  String?
+  // For SHORT_ANSWER questions: the reference answer given to the AI grader
+  // as a rubric. Unused for SINGLE_CHOICE/MULTIPLE_SELECT.
+  modelAnswer  String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -293,6 +297,10 @@ model QuizAttempt {
   tabSwitchCount Int          @default(0)
   teacherFeedback String?
 
+  // True while at least one SHORT_ANSWER answer's AI-suggested grade hasn't
+  // been confirmed or overridden by the teacher yet.
+  hasPendingReview Boolean    @default(false)
+
   answers       Answer[]
 
   @@unique([quizId, studentId, attemptNumber])
@@ -306,8 +314,16 @@ model Answer {
   questionId       String
   question         Question    @relation(fields: [questionId], references: [id])
   selectedOptionIds String[]  @default([])
+  // For SHORT_ANSWER questions.
+  textAnswer        String?
   isCorrect        Boolean?
   marksAwarded     Int?
+  // AI's initial grading pass for a SHORT_ANSWER answer — kept alongside the
+  // final marksAwarded so a teacher can see what changed if they override it.
+  aiSuggestedMarks    Int?
+  aiSuggestedFeedback String?
+  teacherNote         String?
+  needsReview         Boolean  @default(false)
   answeredAt       DateTime    @updatedAt
 
   @@unique([attemptId, questionId])

@@ -4,7 +4,15 @@ import { AlertTriangle, ArrowLeft, ArrowRight, Check, Maximize, Minimize2, Shiel
 import { getActiveAttempt, recordTabSwitch, saveAnswer, startAttempt, submitAttempt } from "../../api/student";
 import { apiErrorMessage } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
-import { AttemptInProgress } from "../../types";
+import { AttemptInProgress, AttemptQuestion } from "../../types";
+
+function isAnswered(q: AttemptQuestion) {
+  return q.selectedOptionIds.length > 0 || !!(q.textAnswer && q.textAnswer.trim());
+}
+
+function countAnswered(questions: AttemptQuestion[]) {
+  return questions.filter(isAnswered).length;
+}
 import { PageLoader } from "../../components/ui/Spinner";
 import { ConfirmDialog } from "../../components/ui/ConfirmDialog";
 import { ProgressBar } from "../../components/ui/ProgressBar";
@@ -196,10 +204,29 @@ export default function QuizTakePage() {
     setAttempt((prev) => {
       if (!prev) return prev;
       const questions = prev.questions.map((q) => (q.questionId === questionId ? { ...q, selectedOptionIds: nextSelected } : q));
-      return { ...prev, questions, answeredCount: questions.filter((q) => q.selectedOptionIds.length > 0).length };
+      return { ...prev, questions, answeredCount: countAnswered(questions) };
     });
     try {
-      await saveAnswer(attempt.id, questionId, nextSelected);
+      await saveAnswer(attempt.id, questionId, { selectedOptionIds: nextSelected });
+    } catch (err) {
+      showToast(apiErrorMessage(err), "error");
+    }
+  }
+
+  function handleTextAnswerChange(questionId: string, textAnswer: string) {
+    setAttempt((prev) => {
+      if (!prev) return prev;
+      const questions = prev.questions.map((q) => (q.questionId === questionId ? { ...q, textAnswer } : q));
+      return { ...prev, questions, answeredCount: countAnswered(questions) };
+    });
+  }
+
+  async function handleTextAnswerBlur(questionId: string) {
+    if (!attempt) return;
+    const target = attempt.questions.find((q) => q.questionId === questionId);
+    if (!target) return;
+    try {
+      await saveAnswer(attempt.id, questionId, { textAnswer: target.textAnswer ?? "" });
     } catch (err) {
       showToast(apiErrorMessage(err), "error");
     }
@@ -224,7 +251,7 @@ export default function QuizTakePage() {
 
   const question = attempt.questions[currentIndex];
   const totalQuestions = attempt.questions.length;
-  const answeredCount = attempt.questions.filter((q) => q.selectedOptionIds.length > 0).length;
+  const answeredCount = countAnswered(attempt.questions);
   const isLast = currentIndex === totalQuestions - 1;
   const isLow = remainingSeconds <= 60;
 
@@ -309,30 +336,43 @@ export default function QuizTakePage() {
           </div>
           <h2 className="mt-2 text-lg font-semibold leading-relaxed text-ink-900">{question.text}</h2>
 
-          <div className="mt-5 space-y-3">
-            {question.options.map((option, i) => {
-              const selected = question.selectedOptionIds.includes(option.id);
-              const isMulti = question.type === "MULTIPLE_SELECT";
-              return (
-                <button
-                  key={option.id}
-                  onClick={() => handleSelectOption(question.questionId, option.id)}
-                  className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
-                    selected ? "border-brand-500 bg-brand-50 text-brand-900" : "border-ink-200 hover:border-brand-300 hover:bg-ink-50"
-                  }`}
-                >
-                  <span
-                    className={`flex h-6 w-6 shrink-0 items-center justify-center border text-xs font-bold ${isMulti ? "rounded-md" : "rounded-full"} ${
-                      selected ? "border-brand-600 bg-brand-600 text-white" : "border-ink-300 text-ink-500"
+          {question.type === "SHORT_ANSWER" ? (
+            <div className="mt-5">
+              <textarea
+                className="textarea min-h-[140px]"
+                placeholder="Type your answer here…"
+                value={question.textAnswer ?? ""}
+                onChange={(e) => handleTextAnswerChange(question.questionId, e.target.value)}
+                onBlur={() => handleTextAnswerBlur(question.questionId)}
+              />
+              <p className="mt-1.5 text-xs text-ink-400">Your answer is graded by AI and reviewed by your teacher.</p>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3">
+              {question.options.map((option, i) => {
+                const selected = question.selectedOptionIds.includes(option.id);
+                const isMulti = question.type === "MULTIPLE_SELECT";
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => handleSelectOption(question.questionId, option.id)}
+                    className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition-colors ${
+                      selected ? "border-brand-500 bg-brand-50 text-brand-900" : "border-ink-200 hover:border-brand-300 hover:bg-ink-50"
                     }`}
                   >
-                    {selected ? <Check className="h-3.5 w-3.5" /> : String.fromCharCode(65 + i)}
-                  </span>
-                  {option.text}
-                </button>
-              );
-            })}
-          </div>
+                    <span
+                      className={`flex h-6 w-6 shrink-0 items-center justify-center border text-xs font-bold ${isMulti ? "rounded-md" : "rounded-full"} ${
+                        selected ? "border-brand-600 bg-brand-600 text-white" : "border-ink-300 text-ink-500"
+                      }`}
+                    >
+                      {selected ? <Check className="h-3.5 w-3.5" /> : String.fromCharCode(65 + i)}
+                    </span>
+                    {option.text}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
           <div className="mt-8 flex items-center justify-between">
             <button className="btn-secondary" disabled={currentIndex === 0} onClick={() => setCurrentIndex((i) => i - 1)}>
@@ -354,7 +394,7 @@ export default function QuizTakePage() {
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-ink-400">Questions</p>
           <div className="grid grid-cols-5 gap-2 lg:grid-cols-4">
             {attempt.questions.map((q, i) => {
-              const answered = q.selectedOptionIds.length > 0;
+              const answered = isAnswered(q);
               const isCurrent = i === currentIndex;
               return (
                 <button
