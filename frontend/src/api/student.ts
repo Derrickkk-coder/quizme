@@ -1,5 +1,5 @@
 import { apiClient } from "./client";
-import { Attempt, AttemptResult, Paginated, Quiz, QuizAttemptSummary, StudentPerformance } from "../types";
+import { Attempt, AttemptResult, Leaderboard, Paginated, Quiz, QuizAttemptSummary, StudentPerformance } from "../types";
 
 // ─── Quizzes ──────────────────────────────────────────────────────────
 
@@ -55,6 +55,11 @@ export async function submitAttempt(attemptId: string, tabSwitchCount?: number):
 
 export async function getStudentPerformanceSummary(): Promise<{ data: StudentPerformance }> {
   const { data } = await apiClient.get("/student/performance/summary");
+  return data;
+}
+
+export async function getLeaderboard(): Promise<{ data: Leaderboard }> {
+  const { data } = await apiClient.get("/student/performance/leaderboard");
   return data;
 }
 

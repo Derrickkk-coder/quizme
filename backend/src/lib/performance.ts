@@ -213,3 +213,45 @@ export async function computeStudentPerformance(studentId: string, teacherId?: s
     myGrade,
   };
 }
+
+export async function computeClassLeaderboard(studentId: string) {
+  const student = await prisma.studentProfile.findUnique({ where: { id: studentId }, include: { class: true } });
+  if (!student) throw new HttpError(404, "Student not found");
+  if (!student.classId) return { class: null, rows: [] };
+
+  const classmates = await prisma.studentProfile.findMany({
+    where: { classId: student.classId },
+    include: { user: { select: safeUserSelect } },
+  });
+  const classmateIds = classmates.map((c) => c.id);
+
+  const attempts = await prisma.quizAttempt.findMany({
+    where: { studentId: { in: classmateIds }, status: SUBMITTED },
+    select: { studentId: true, percentage: true },
+  });
+
+  const statsByStudent = new Map<string, { total: number; count: number }>();
+  for (const a of attempts) {
+    const entry = statsByStudent.get(a.studentId) ?? { total: 0, count: 0 };
+    entry.total += a.percentage ?? 0;
+    entry.count += 1;
+    statsByStudent.set(a.studentId, entry);
+  }
+
+  const rows = classmates
+    .map((c) => {
+      const stats = statsByStudent.get(c.id);
+      return {
+        studentId: c.id,
+        name: c.user.name,
+        quizzesCompleted: stats?.count ?? 0,
+        averagePercentage: stats ? Math.round((stats.total / stats.count) * 10) / 10 : null,
+        isYou: c.id === studentId,
+      };
+    })
+    .filter((r) => r.quizzesCompleted > 0)
+    .sort((a, b) => (b.averagePercentage ?? 0) - (a.averagePercentage ?? 0))
+    .map((r, i) => ({ ...r, rank: i + 1 }));
+
+  return { class: student.class?.name ?? null, rows };
+}

@@ -345,3 +345,17 @@ export interface StudentPerformance {
   gradeDistribution: { grade: string; count: number }[];
   myGrade: string | null;
 }
+
+export interface LeaderboardRow {
+  studentId: string;
+  name: string;
+  quizzesCompleted: number;
+  averagePercentage: number | null;
+  isYou: boolean;
+  rank: number;
+}
+
+export interface Leaderboard {
+  class: string | null;
+  rows: LeaderboardRow[];
+}

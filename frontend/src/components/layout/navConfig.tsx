@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Settings,
   MessageCircle,
+  Trophy,
 } from "lucide-react";
 import { ComponentType } from "react";
 import { Role } from "../../types";
@@ -33,6 +34,7 @@ export const studentNav: NavItem[] = [
   { label: "My Quizzes", to: "/app/student/quizzes", icon: BookOpenCheck },
   { label: "Results", to: "/app/student/results", icon: ListChecks },
   { label: "Performance", to: "/app/student/performance", icon: BarChart3 },
+  { label: "Leaderboard", to: "/app/student/leaderboard", icon: Trophy },
   { label: "History", to: "/app/student/history", icon: History },
   { label: "Chat", to: "/app/student/chat", icon: MessageCircle },
   { label: "Notifications", to: "/app/student/notifications", icon: Bell },

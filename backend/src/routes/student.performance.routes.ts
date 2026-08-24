@@ -6,7 +6,7 @@ import { authenticate, requireRole } from "../middleware/auth";
 import { validateQuery } from "../middleware/validate";
 import { asyncHandler } from "../utils/asyncHandler";
 import { requireStudentProfileId } from "../utils/context";
-import { computeStudentPerformance } from "../lib/performance";
+import { computeClassLeaderboard, computeStudentPerformance } from "../lib/performance";
 import { paginationMeta, paginationSchema } from "../utils/pagination";
 
 const router = Router();
@@ -17,6 +17,15 @@ router.get(
   asyncHandler(async (req, res) => {
     const studentId = await requireStudentProfileId(req);
     const data = await computeStudentPerformance(studentId);
+    res.json({ data });
+  })
+);
+
+router.get(
+  "/leaderboard",
+  asyncHandler(async (req, res) => {
+    const studentId = await requireStudentProfileId(req);
+    const data = await computeClassLeaderboard(studentId);
     res.json({ data });
   })
 );

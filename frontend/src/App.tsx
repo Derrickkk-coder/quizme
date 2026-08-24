@@ -16,6 +16,7 @@ import QuizTakePage from "./pages/student/QuizTakePage";
 import StudentResultsPage from "./pages/student/ResultsPage";
 import StudentResultDetailPage from "./pages/student/ResultDetailPage";
 import PerformancePage from "./pages/student/PerformancePage";
+import LeaderboardPage from "./pages/student/LeaderboardPage";
 import HistoryPage from "./pages/student/HistoryPage";
 
 import TeacherDashboard from "./pages/teacher/TeacherDashboard";
@@ -75,6 +76,7 @@ export default function App() {
                   <Route path="results" element={<StudentResultsPage />} />
                   <Route path="results/:attemptId" element={<StudentResultDetailPage />} />
                   <Route path="performance" element={<PerformancePage />} />
+                  <Route path="leaderboard" element={<LeaderboardPage />} />
                   <Route path="history" element={<HistoryPage />} />
                   <Route path="chat" element={<ChatPage />} />
                   <Route path="notifications" element={<NotificationsPage />} />
