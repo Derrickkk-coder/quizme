@@ -96,6 +96,30 @@ export async function bulkDeleteQuestions(questionIds: string[]): Promise<{ data
   return data;
 }
 
+export interface BulkImportRow {
+  topic: string;
+  text: string;
+  type: QuestionType;
+  difficulty: Difficulty;
+  marks: number;
+  explanation?: string;
+  options: { text: string; isCorrect: boolean }[];
+}
+
+export interface BulkImportQuestionsResult {
+  createdCount: number;
+  errors: { row: number; reason: string }[];
+}
+
+export async function bulkImportQuestions(payload: {
+  subjectId: string;
+  classId?: string;
+  questions: BulkImportRow[];
+}): Promise<{ data: BulkImportQuestionsResult }> {
+  const { data } = await apiClient.post("/teacher/questions/bulk-import", payload);
+  return data;
+}
+
 // ─── AI question generation ─────────────────────────────────────────────
 
 export interface GeneratedQuestion {

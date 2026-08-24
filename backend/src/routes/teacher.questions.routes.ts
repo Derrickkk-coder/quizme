@@ -136,6 +136,70 @@ router.post(
   })
 );
 
+const bulkImportRowSchema = z.object({
+  topic: z.string().min(1),
+  text: z.string().min(3),
+  type: z.nativeEnum(QuestionType).default(QuestionType.SINGLE_CHOICE),
+  difficulty: z.nativeEnum(Difficulty).default(Difficulty.MEDIUM),
+  marks: z.number().int().min(1).default(1),
+  explanation: z.string().optional(),
+  options: z.array(optionSchema).min(2).max(6),
+});
+
+const bulkImportSchema = z.object({
+  subjectId: z.string(),
+  classId: z.string().optional(),
+  questions: z.array(bulkImportRowSchema).min(1).max(300),
+});
+
+router.post(
+  "/bulk-import",
+  validateBody(bulkImportSchema),
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const { subjectId, classId, questions } = req.body;
+
+    let createdCount = 0;
+    const errors: { row: number; reason: string }[] = [];
+
+    for (let i = 0; i < questions.length; i++) {
+      const row = questions[i];
+      try {
+        assertValidCorrectness(row.type, row.options);
+        await prisma.question.create({
+          data: {
+            teacherId,
+            subjectId,
+            classId: classId || null,
+            topic: row.topic,
+            text: row.text,
+            type: row.type,
+            difficulty: row.difficulty,
+            marks: row.marks,
+            explanation: row.explanation || null,
+            options: { create: row.options.map((o: any, idx: number) => ({ ...o, order: idx })) },
+          },
+        });
+        createdCount++;
+      } catch (err) {
+        errors.push({ row: i + 1, reason: err instanceof HttpError ? err.message : "Could not create this question" });
+      }
+    }
+
+    if (createdCount > 0) {
+      await recordAudit({
+        actorId: req.user!.sub,
+        action: "QUESTIONS_BULK_IMPORTED",
+        entityType: "Question",
+        metadata: { count: createdCount, subjectId },
+        req,
+      });
+    }
+
+    res.status(201).json({ data: { createdCount, errors } });
+  })
+);
+
 const updateQuestionSchema = z.object({
   subjectId: z.string().optional(),
   classId: z.string().optional(),

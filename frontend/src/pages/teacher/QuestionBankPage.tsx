@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Plus, Search, Sparkles, Trash2 } from "lucide-react";
+import { Eye, Pencil, Plus, Search, Sparkles, Trash2, Upload } from "lucide-react";
 import {
   bulkDeleteQuestions,
   createQuestion,
@@ -21,6 +21,7 @@ import { Pagination } from "../../components/ui/Pagination";
 import { DifficultyBadge } from "../../components/ui/StatusBadge";
 import { Difficulty, Question, QuestionType } from "../../types";
 import { GenerateFromNotesModal } from "./GenerateFromNotesModal";
+import { ImportQuestionsModal } from "./ImportQuestionsModal";
 
 const emptyForm: QuestionPayload = {
   subjectId: "",
@@ -49,6 +50,7 @@ export default function QuestionBankPage() {
   const [previewing, setPreviewing] = useState<Question | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Question | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
@@ -135,6 +137,9 @@ export default function QuestionBankPage() {
           <p className="mt-1 text-sm text-ink-500">Build a reusable library of questions for your quizzes.</p>
         </div>
         <div className="flex items-center gap-2">
+          <button className="btn-secondary" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4" /> Import CSV
+          </button>
           <button className="btn-secondary" onClick={() => setGenerateOpen(true)}>
             <Sparkles className="h-4 w-4" /> Generate from Notes
           </button>
@@ -235,6 +240,13 @@ export default function QuestionBankPage() {
       <GenerateFromNotesModal
         open={generateOpen}
         onClose={() => setGenerateOpen(false)}
+        subjects={subjectsQuery.data?.data ?? []}
+        classes={classesQuery.data?.data ?? []}
+      />
+
+      <ImportQuestionsModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
         subjects={subjectsQuery.data?.data ?? []}
         classes={classesQuery.data?.data ?? []}
       />
