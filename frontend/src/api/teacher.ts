@@ -86,6 +86,16 @@ export async function deleteQuestion(id: string): Promise<void> {
   await apiClient.delete(`/teacher/questions/${id}`);
 }
 
+export interface BulkDeleteQuestionsResult {
+  deletedCount: number;
+  skipped: { id: string; text: string }[];
+}
+
+export async function bulkDeleteQuestions(questionIds: string[]): Promise<{ data: BulkDeleteQuestionsResult }> {
+  const { data } = await apiClient.post("/teacher/questions/bulk-delete", { questionIds });
+  return data;
+}
+
 // ─── AI question generation ─────────────────────────────────────────────
 
 export interface GeneratedQuestion {

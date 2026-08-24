@@ -197,4 +197,41 @@ router.delete(
   })
 );
 
+const bulkDeleteSchema = z.object({ questionIds: z.array(z.string()).min(1) });
+
+router.post(
+  "/bulk-delete",
+  validateBody(bulkDeleteSchema),
+  asyncHandler(async (req, res) => {
+    const teacherId = await requireTeacherProfileId(req);
+    const { questionIds } = req.body;
+
+    const questions = await prisma.question.findMany({ where: { id: { in: questionIds }, teacherId } });
+    const usedQuestionIds = new Set(
+      (
+        await prisma.quizQuestion.findMany({
+          where: { questionId: { in: questions.map((q) => q.id) } },
+          select: { questionId: true },
+        })
+      ).map((qq) => qq.questionId)
+    );
+
+    const deletable = questions.filter((q) => !usedQuestionIds.has(q.id));
+    const skipped = questions.filter((q) => usedQuestionIds.has(q.id)).map((q) => ({ id: q.id, text: q.text }));
+
+    if (deletable.length > 0) {
+      await prisma.question.deleteMany({ where: { id: { in: deletable.map((q) => q.id) } } });
+      await recordAudit({
+        actorId: req.user!.sub,
+        action: "QUESTIONS_BULK_DELETED",
+        entityType: "Question",
+        metadata: { count: deletable.length, questionIds: deletable.map((q) => q.id) },
+        req,
+      });
+    }
+
+    res.json({ data: { deletedCount: deletable.length, skipped } });
+  })
+);
+
 export default router;

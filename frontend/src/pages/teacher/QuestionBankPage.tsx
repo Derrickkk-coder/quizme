@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Pencil, Plus, Search, Sparkles, Trash2 } from "lucide-react";
 import {
+  bulkDeleteQuestions,
   createQuestion,
   deleteQuestion,
   getTeacherClasses,
@@ -48,6 +49,8 @@ export default function QuestionBankPage() {
   const [previewing, setPreviewing] = useState<Question | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Question | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -72,6 +75,47 @@ export default function QuestionBankPage() {
       setDeleteTarget(null);
     },
   });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: () => bulkDeleteQuestions([...selectedIds]),
+    onSuccess: ({ data }) => {
+      if (data.deletedCount > 0) {
+        showToast(`${data.deletedCount} question${data.deletedCount === 1 ? "" : "s"} deleted`, "success");
+      }
+      if (data.skipped.length > 0) {
+        showToast(
+          `${data.skipped.length} question${data.skipped.length === 1 ? "" : "s"} skipped — still used in a quiz. Remove ${data.skipped.length === 1 ? "it" : "them"} from the quiz first.`,
+          "error"
+        );
+      }
+      setSelectedIds(new Set());
+      setBulkDeleteOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["teacher", "questions"] });
+    },
+    onError: (err) => {
+      showToast(apiErrorMessage(err), "error");
+      setBulkDeleteOpen(false);
+    },
+  });
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [page, search, subjectId, difficulty]);
+
+  function toggleOne(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const pageIds = questionsQuery.data?.data.map((q) => q.id) ?? [];
+    const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.has(id));
+    setSelectedIds(allSelected ? new Set() : new Set(pageIds));
+  }
 
   function openCreate() {
     setEditing(null);
@@ -125,17 +169,41 @@ export default function QuestionBankPage() {
         <EmptyState title="No questions found" description="Create your first question to build your bank." action={<button className="btn-primary" onClick={openCreate}>New Question</button>} />
       ) : (
         <div className="card overflow-hidden">
+          <div className="flex items-center justify-between gap-3 border-b border-ink-100 px-4 py-2.5">
+            <label className="flex items-center gap-2 text-sm text-ink-600">
+              <input
+                type="checkbox"
+                className="h-4 w-4 rounded text-brand-600"
+                checked={questionsQuery.data.data.length > 0 && questionsQuery.data.data.every((q) => selectedIds.has(q.id))}
+                onChange={toggleSelectAll}
+              />
+              {selectedIds.size > 0 ? `${selectedIds.size} selected` : "Select all"}
+            </label>
+            {selectedIds.size > 0 && (
+              <button className="btn-secondary btn-sm text-red-600" onClick={() => setBulkDeleteOpen(true)}>
+                <Trash2 className="h-4 w-4" /> Delete selected ({selectedIds.size})
+              </button>
+            )}
+          </div>
           <div className="divide-y divide-ink-100">
             {questionsQuery.data.data.map((q) => (
               <div key={q.id} className="flex items-start justify-between gap-4 p-4">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-ink-800">{q.text}</p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
-                    <DifficultyBadge difficulty={q.difficulty} />
-                    {q.type === "MULTIPLE_SELECT" && <span className="badge-brand">Multi-select</span>}
-                    <span className="badge-gray">{q.subject?.name}</span>
-                    <span className="text-ink-400">{q.topic}</span>
-                    <span className="text-ink-400">· {q.marks} mark{q.marks > 1 ? "s" : ""}</span>
+                <div className="flex min-w-0 items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 shrink-0 rounded text-brand-600"
+                    checked={selectedIds.has(q.id)}
+                    onChange={() => toggleOne(q.id)}
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-ink-800">{q.text}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                      <DifficultyBadge difficulty={q.difficulty} />
+                      {q.type === "MULTIPLE_SELECT" && <span className="badge-brand">Multi-select</span>}
+                      <span className="badge-gray">{q.subject?.name}</span>
+                      <span className="text-ink-400">{q.topic}</span>
+                      <span className="text-ink-400">· {q.marks} mark{q.marks > 1 ? "s" : ""}</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
@@ -196,6 +264,17 @@ export default function QuestionBankPage() {
         loading={deleteMutation.isPending}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        title={`Delete ${selectedIds.size} question${selectedIds.size === 1 ? "" : "s"}?`}
+        message="These questions will be permanently removed from your question bank. Any that are still used in a quiz will be skipped."
+        confirmLabel="Delete"
+        danger
+        loading={bulkDeleteMutation.isPending}
+        onConfirm={() => bulkDeleteMutation.mutate()}
+        onCancel={() => setBulkDeleteOpen(false)}
       />
     </div>
   );
