@@ -154,7 +154,7 @@ export default function QuizEditorPage() {
   const reopenMutation = useMutation({
     mutationFn: () => unpublishQuiz(quizId!),
     onSuccess: () => {
-      showToast("Quiz reopened as a draft — publish it again when you're ready", "success");
+      showToast("Quiz reopened as a draft — existing results are unaffected. Publish it again when you're ready.", "success");
       queryClient.invalidateQueries({ queryKey: ["teacher", "quiz", quizId] });
     },
     onError: (err) => showToast(apiErrorMessage(err), "error"),
@@ -203,8 +203,13 @@ export default function QuizEditorPage() {
                 <XCircle className="h-4 w-4" /> Close
               </button>
             )}
-            {quiz.status === "CLOSED" && (quiz._count?.attempts ?? 0) === 0 && (
-              <button className="btn-secondary btn-sm" onClick={() => reopenMutation.mutate()} disabled={reopenMutation.isPending} title="No students have attempted this quiz yet, so it's safe to reopen">
+            {quiz.status === "CLOSED" && (
+              <button
+                className="btn-secondary btn-sm"
+                onClick={() => reopenMutation.mutate()}
+                disabled={reopenMutation.isPending}
+                title="Moves this quiz back to draft. Existing student results are kept — publish again to let students attempt it."
+              >
                 <RotateCcw className="h-4 w-4" /> Reopen
               </button>
             )}

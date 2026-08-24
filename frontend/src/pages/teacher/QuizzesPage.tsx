@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { Copy, Pencil, PlusCircle, Search, Send, Trash2, XCircle, BarChart3 } from "lucide-react";
+import { Copy, Pencil, PlusCircle, RotateCcw, Search, Send, Trash2, XCircle, BarChart3 } from "lucide-react";
 import {
   closeQuiz,
   deleteQuiz,
@@ -10,6 +10,7 @@ import {
   getTeacherSubjects,
   listTeacherQuizzes,
   publishQuiz,
+  unpublishQuiz,
 } from "../../api/teacher";
 import { apiErrorMessage } from "../../api/client";
 import { useToast } from "../../context/ToastContext";
@@ -65,6 +66,14 @@ export default function QuizzesPage() {
     mutationFn: closeQuiz,
     onSuccess: () => {
       showToast("Quiz closed", "success");
+      invalidate();
+    },
+    onError: (err) => showToast(apiErrorMessage(err), "error"),
+  });
+  const reopenMutation = useMutation({
+    mutationFn: unpublishQuiz,
+    onSuccess: () => {
+      showToast("Quiz reopened as a draft — existing results are unaffected. Publish it again when you're ready.", "success");
       invalidate();
     },
     onError: (err) => showToast(apiErrorMessage(err), "error"),
@@ -173,6 +182,15 @@ export default function QuizzesPage() {
                         {(q.status === "ACTIVE" || q.status === "SCHEDULED") && (
                           <button className="btn-ghost btn-sm" title="Close" onClick={() => closeMutation.mutate(q.id)}>
                             <XCircle className="h-4 w-4" />
+                          </button>
+                        )}
+                        {q.status === "CLOSED" && (
+                          <button
+                            className="btn-ghost btn-sm"
+                            title="Reopen as draft — existing results are kept"
+                            onClick={() => reopenMutation.mutate(q.id)}
+                          >
+                            <RotateCcw className="h-4 w-4" />
                           </button>
                         )}
                         {q.status !== "DRAFT" && (

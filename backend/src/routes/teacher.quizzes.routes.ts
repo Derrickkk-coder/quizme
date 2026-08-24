@@ -227,9 +227,8 @@ router.post(
   "/:id/unpublish",
   asyncHandler(async (req, res) => {
     const teacherId = await requireTeacherProfileId(req);
-    const existing = await prisma.quiz.findFirst({ where: { id: req.params.id, teacherId }, include: { _count: { select: { attempts: true } } } });
+    const existing = await prisma.quiz.findFirst({ where: { id: req.params.id, teacherId } });
     if (!existing) throw new HttpError(404, "Quiz not found");
-    if (existing._count.attempts > 0) throw new HttpError(400, "Cannot unpublish a quiz that already has attempts");
 
     const quiz = await prisma.quiz.update({ where: { id: existing.id }, data: { status: QuizStatus.DRAFT }, include: quizInclude });
     await recordAudit({ actorId: req.user!.sub, action: "QUIZ_UNPUBLISHED", entityType: "Quiz", entityId: quiz.id, req });
