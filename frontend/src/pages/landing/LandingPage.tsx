@@ -23,6 +23,7 @@ import {
 import { Logo } from "../../components/Logo";
 import { RevealGroup, RevealCard } from "../../components/motion/Reveal";
 import { ThemeToggle } from "../../components/ui/ThemeToggle";
+import heroBackground from "../../assets/background.jpg";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -170,6 +171,16 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-surface">
+        <div className="pointer-events-none absolute inset-0">
+          <img
+            src={heroBackground}
+            alt=""
+            className="h-full w-full object-cover object-[center_28%] opacity-[0.42] saturate-[0.6] dark:opacity-[0.16] dark:saturate-[0.4]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-50 via-brand-50/35 to-surface" />
+          <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+        </div>
+
         <div className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full bg-brand-300/40 blur-3xl animate-blob" />
         <div className="pointer-events-none absolute right-0 top-10 h-72 w-72 rounded-full bg-accent-300/40 blur-3xl animate-blob [animation-delay:2s]" />
         <div className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl animate-blob [animation-delay:4s]" />
