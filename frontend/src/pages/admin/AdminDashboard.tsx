@@ -52,7 +52,7 @@ export default function AdminDashboard() {
       <DashboardHero
         eyebrow="Admin"
         name={user?.name ?? ""}
-        subtitle="A live snapshot of activity across QUIZME."
+        subtitle="A live snapshot of activity across EduQuiz."
         icon={<ShieldCheck className="h-10 w-10" />}
         cta={{ label: "View Reports", to: "/app/admin/reports", icon: <TrendingUp className="h-4 w-4" /> }}
       />

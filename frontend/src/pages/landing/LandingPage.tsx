@@ -66,8 +66,8 @@ const FEATURES = [
 
 const FAQS = [
   {
-    q: "Is QUIZME built specifically for JHS schools?",
-    a: "Yes. QUIZME focuses on quizzes and assessments for Junior High School — simpler and more focused than a full LMS, covering the subjects and class structure JHS schools already use.",
+    q: "Is EduQuiz built specifically for JHS schools?",
+    a: "Yes. EduQuiz focuses on quizzes and assessments for Junior High School — simpler and more focused than a full LMS, covering the subjects and class structure JHS schools already use.",
   },
   {
     q: "Can students see their answers were correct?",
@@ -264,7 +264,7 @@ export default function LandingPage() {
       {/* How it works */}
       <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
-          <h2 className="text-3xl font-bold text-ink-900">How QUIZME works</h2>
+          <h2 className="text-3xl font-bold text-ink-900">How EduQuiz works</h2>
           <p className="mt-3 text-ink-500">From question bank to graded result, in four simple steps.</p>
         </div>
         <RevealGroup className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
@@ -416,11 +416,11 @@ export default function LandingPage() {
           transition={{ type: "spring", stiffness: 120, damping: 16 }}
           className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8"
         >
-          <h2 className="text-3xl font-bold text-ink-900">Ready to bring QUIZME to your school?</h2>
+          <h2 className="text-3xl font-bold text-ink-900">Ready to bring EduQuiz to your school?</h2>
           <p className="mt-3 text-ink-500">Reach out to your school administrator to get access, or log in if you already have an account.</p>
           <motion.div className="mt-8 inline-block" whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}>
             <Link to="/login" className="btn-primary px-6 py-3 text-base">
-              Log in to QUIZME
+              Log in to EduQuiz
             </Link>
           </motion.div>
         </motion.div>
@@ -429,7 +429,7 @@ export default function LandingPage() {
       <footer className="border-t border-ink-100 py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
           <Logo markClassName="h-7 w-7" />
-          <p className="text-xs text-ink-400">&copy; {new Date().getFullYear()} QUIZME. All rights reserved.</p>
+          <p className="text-xs text-ink-400">&copy; {new Date().getFullYear()} EduQuiz. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -635,7 +635,7 @@ function AutoGenerateModal({
       }
     >
       <div className="space-y-4">
-        <p className="text-sm text-ink-500">QUIZME will pick matching questions at random from your question bank for this quiz's subject.</p>
+        <p className="text-sm text-ink-500">EduQuiz will pick matching questions at random from your question bank for this quiz's subject.</p>
         <div>
           <label className="label">Topic (optional)</label>
           <input className="input" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Algebra" />

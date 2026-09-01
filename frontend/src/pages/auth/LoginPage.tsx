@@ -56,7 +56,7 @@ export default function LoginPage() {
             <div className="neu-raised flex h-20 w-20 items-center justify-center rounded-3xl bg-ink-50">
               <LogoMark className="h-11 w-11" />
             </div>
-            <p className="mt-3 text-xs font-bold tracking-wide text-ink-400">QUIZME</p>
+            <p className="mt-3 text-xs font-bold tracking-wide text-ink-400">EDUQUIZ</p>
 
             <h1 className="mt-4 text-2xl font-bold text-ink-900">Welcome Back</h1>
             <p className="mt-1 text-sm text-ink-500">Login to continue to your account</p>
@@ -122,7 +122,7 @@ export default function LoginPage() {
           <span className="badge w-fit bg-white/15 text-white">Built for JHS schools</span>
           <h3 className="mt-5 max-w-md text-3xl font-bold leading-tight text-white">Learn. Practice. Improve.</h3>
           <p className="mt-4 max-w-sm text-brand-100">
-            QUIZME helps JHS students and teachers create, manage, and take quizzes online — with instant grading and clear
+            EduQuiz helps JHS students and teachers create, manage, and take quizzes online — with instant grading and clear
             performance insights.
           </p>
         </div>
