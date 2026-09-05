@@ -536,7 +536,7 @@ export default function LandingPage() {
               </motion.div>
               <motion.div whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}>
                 <a
-                  href="mailto:hello@eduquiz.app?subject=EduQuiz%20for%20our%20school"
+                  href="mailto:akwaboahderrick1@gmail.com?subject=EduQuiz%20for%20our%20school"
                   className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/40 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-white/10"
                 >
                   <Mail className="h-4 w-4" /> Contact Administrator
