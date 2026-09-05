@@ -13,15 +13,12 @@ import {
   Menu,
   X,
   ArrowRight,
-  GraduationCap,
-  BookOpen,
-  PenLine,
-  Award,
-  Brain,
   Star,
+  Mail,
+  GraduationCap,
 } from "lucide-react";
 import { Logo } from "../../components/Logo";
-import { RevealGroup, RevealCard } from "../../components/motion/Reveal";
+import { RevealGroup, RevealCard, RevealItem } from "../../components/motion/Reveal";
 import { ThemeToggle } from "../../components/ui/ThemeToggle";
 import heroBackground from "../../assets/background.jpg";
 
@@ -93,13 +90,11 @@ const SUBJECT_TICKER = [
   "Religious & Moral Education",
 ];
 
-const FLOATING_ICONS = [
-  { Icon: GraduationCap, top: "12%", left: "8%", size: "h-8 w-8", color: "text-brand-400", duration: "6s", delay: "0s" },
-  { Icon: BookOpen, top: "68%", left: "6%", size: "h-7 w-7", color: "text-accent-500", duration: "7s", delay: "0.6s" },
-  { Icon: PenLine, top: "22%", left: "90%", size: "h-7 w-7", color: "text-amber-500", duration: "5.5s", delay: "0.3s" },
-  { Icon: Award, top: "75%", left: "88%", size: "h-8 w-8", color: "text-brand-500", duration: "6.5s", delay: "0.9s" },
-  { Icon: Brain, top: "5%", left: "48%", size: "h-6 w-6", color: "text-accent-400", duration: "8s", delay: "0.2s" },
-  { Icon: Star, top: "85%", left: "45%", size: "h-6 w-6", color: "text-amber-400", duration: "5s", delay: "1.1s" },
+const TRUST_POINTS = [
+  { icon: ShieldCheck, label: "Server-verified grading" },
+  { icon: Timer, label: "Anti-cheat by design" },
+  { icon: GraduationCap, label: "Built for JHS curriculum" },
+  { icon: Sparkles, label: "Instant results" },
 ];
 
 const heroWords = ["Learn.", "Practice.", "Improve."];
@@ -131,11 +126,11 @@ export default function LandingPage() {
           <div className="hidden items-center gap-3 md:flex">
             <ThemeToggle />
             <Link to="/login" className="btn-secondary btn-sm">
-              Teacher Login
+              Student Login
             </Link>
             <motion.div whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}>
               <Link to="/login" className="btn-primary btn-sm">
-                Student Login
+                Teacher Login
               </Link>
             </motion.div>
           </div>
@@ -175,9 +170,9 @@ export default function LandingPage() {
           <img
             src={heroBackground}
             alt=""
-            className="h-full w-full object-cover object-[center_28%] opacity-[0.42] saturate-[0.6] dark:opacity-[0.16] dark:saturate-[0.4]"
+            className="h-full w-full object-cover object-[center_28%] opacity-[0.28] saturate-[0.5] dark:opacity-[0.12] dark:saturate-[0.35]"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-brand-50 via-brand-50/35 to-surface" />
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-50 via-brand-50/60 to-surface" />
           <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
         </div>
 
@@ -185,18 +180,72 @@ export default function LandingPage() {
         <div className="pointer-events-none absolute right-0 top-10 h-72 w-72 rounded-full bg-accent-300/40 blur-3xl animate-blob [animation-delay:2s]" />
         <div className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-amber-200/40 blur-3xl animate-blob [animation-delay:4s]" />
 
-        <div className="pointer-events-none absolute inset-0 hidden lg:block">
-          {FLOATING_ICONS.map(({ Icon, top, left, size, color, duration, delay }, i) => (
-            <div
-              key={i}
-              className="absolute animate-float"
-              style={{ top, left, animationDuration: duration, animationDelay: delay }}
-            >
-              <div className={`flex items-center justify-center rounded-2xl bg-white/70 p-3 shadow-lg backdrop-blur ${color}`}>
-                <Icon className={size} />
+        <div className="pointer-events-none absolute inset-0 hidden xl:block">
+          {/* Quiz-in-progress preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, rotate: -6 }}
+            animate={{ opacity: 1, y: 0, rotate: -6 }}
+            transition={{ delay: 0.5, type: "spring", stiffness: 120, damping: 16 }}
+            className="absolute left-[4%] top-[14%] animate-float [animation-duration:7s]"
+          >
+            <div className="w-52 rounded-2xl border border-ink-200 bg-surface/95 p-4 shadow-xl backdrop-blur">
+              <div className="flex items-center justify-between text-[10px] font-semibold text-ink-400">
+                <span>QUESTION 3 OF 10</span>
+                <span className="flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-red-600">
+                  <Timer className="h-3 w-3" /> 04:12
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 w-full rounded-full bg-ink-100">
+                <div className="h-1.5 w-[30%] rounded-full bg-brand-500" />
+              </div>
+              <p className="mt-3 text-xs font-semibold text-ink-800">Which gas do plants absorb?</p>
+              <div className="mt-2 space-y-1.5">
+                <div className="rounded-lg border border-brand-300 bg-brand-50 px-2.5 py-1.5 text-[11px] font-medium text-brand-700">
+                  Carbon dioxide
+                </div>
+                <div className="rounded-lg border border-ink-100 px-2.5 py-1.5 text-[11px] text-ink-500">Oxygen</div>
               </div>
             </div>
-          ))}
+          </motion.div>
+
+          {/* Analytics preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, rotate: 5 }}
+            animate={{ opacity: 1, y: 0, rotate: 5 }}
+            transition={{ delay: 0.65, type: "spring", stiffness: 120, damping: 16 }}
+            className="absolute right-[6%] top-[10%] animate-float [animation-duration:8s] [animation-delay:0.4s]"
+          >
+            <div className="w-44 rounded-2xl border border-ink-200 bg-surface/95 p-4 shadow-xl backdrop-blur">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-ink-400">Class average</p>
+                <BarChart3 className="h-3.5 w-3.5 text-accent-500" />
+              </div>
+              <p className="mt-1 text-2xl font-extrabold text-ink-900">
+                82<span className="text-sm text-ink-400">%</span>
+              </p>
+              <div className="mt-3 flex h-12 items-end gap-1.5">
+                {[40, 65, 50, 80, 60, 90].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t bg-gradient-to-t from-brand-500 to-accent-400" style={{ height: `${h}%` }} />
+                ))}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Result preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 20, rotate: -4 }}
+            animate={{ opacity: 1, y: 0, rotate: -4 }}
+            transition={{ delay: 0.8, type: "spring", stiffness: 120, damping: 16 }}
+            className="absolute left-[9%] top-[58%] animate-float [animation-duration:6.5s] [animation-delay:0.8s]"
+          >
+            <div className="w-40 rounded-2xl border border-ink-200 bg-surface/95 p-4 text-center shadow-xl backdrop-blur">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <p className="mt-2 text-lg font-extrabold text-ink-900">9/10</p>
+              <p className="text-[11px] text-ink-500">Grade A · Passed</p>
+            </div>
+          </motion.div>
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
@@ -232,7 +281,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="mx-auto mt-5 max-w-xl text-lg text-ink-600"
+              className="mx-auto mt-5 max-w-xl text-lg font-medium text-ink-700"
             >
               A smarter way for schools to create, manage and take online quizzes.
             </motion.p>
@@ -246,12 +295,12 @@ export default function LandingPage() {
               <motion.div className="relative" whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}>
                 <span className="absolute inset-0 animate-ping rounded-lg bg-brand-400 opacity-40" />
                 <Link to="/login" className="btn-primary relative px-6 py-3 text-base">
-                  Student Login <ArrowRight className="h-4 w-4" />
+                  Teacher Login <ArrowRight className="h-4 w-4" />
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}>
                 <Link to="/login" className="btn-secondary px-6 py-3 text-base">
-                  Teacher Login
+                  Student Login
                 </Link>
               </motion.div>
             </motion.div>
@@ -259,16 +308,36 @@ export default function LandingPage() {
         </div>
 
         {/* Subject ticker */}
-        <div className="relative border-t border-brand-100/60 bg-white/50 py-4 backdrop-blur">
+        <div className="relative border-t border-brand-100/60 bg-white/60 py-5 backdrop-blur">
+          <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-wider text-ink-400">Covers every core JHS subject</p>
           <div className="flex overflow-hidden">
-            <div className="flex shrink-0 animate-marquee items-center gap-10 whitespace-nowrap pr-10">
+            <div className="flex shrink-0 animate-marquee items-center gap-3 whitespace-nowrap pr-3">
               {[...SUBJECT_TICKER, ...SUBJECT_TICKER].map((subject, i) => (
-                <span key={i} className="flex items-center gap-2 text-sm font-semibold text-ink-400">
+                <span
+                  key={i}
+                  className="flex items-center gap-1.5 rounded-full border border-ink-200 bg-surface px-4 py-1.5 text-sm font-semibold text-ink-600 shadow-sm"
+                >
                   <Star className="h-3.5 w-3.5 text-amber-400" /> {subject}
                 </span>
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Trust strip */}
+      <section className="border-b border-ink-100 bg-surface py-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <RevealGroup className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {TRUST_POINTS.map(({ icon: Icon, label }) => (
+              <RevealItem key={label} className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                  <Icon className="h-4.5 w-4.5" />
+                </div>
+                <p className="text-xs font-semibold text-ink-600 sm:text-sm">{label}</p>
+              </RevealItem>
+            ))}
+          </RevealGroup>
         </div>
       </section>
 
@@ -285,7 +354,7 @@ export default function LandingPage() {
             { step: "3", title: "Students take the quiz", description: "A focused interface with a timer and live progress." },
             { step: "4", title: "Results, instantly", description: "Automatic grading and class-wide analytics appear right away." },
           ].map((s) => (
-            <RevealCard key={s.step} className="card p-6">
+            <RevealCard key={s.step} className="card p-6 shadow-md transition-shadow duration-300 hover:shadow-2xl">
               <div className="flex h-9 w-9 animate-pulse items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
                 {s.step}
               </div>
@@ -305,7 +374,7 @@ export default function LandingPage() {
           </div>
           <RevealGroup className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
-              <RevealCard key={f.title} className="card p-6">
+              <RevealCard key={f.title} className="card p-6 shadow-md transition-shadow duration-300 hover:shadow-2xl">
                 <motion.div
                   whileHover={{ rotate: 12, scale: 1.1 }}
                   className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-600"
@@ -340,7 +409,7 @@ export default function LandingPage() {
               points: ["Manage users, classes, and subjects in one place", "School-wide analytics and exportable reports", "A full audit log of important platform activity"],
             },
           ].map((a) => (
-            <RevealCard key={a.title} className="card p-8">
+            <RevealCard key={a.title} className="card p-8 shadow-md transition-shadow duration-300 hover:shadow-2xl">
               <h3 className="text-lg font-bold text-ink-900">{a.title}</h3>
               <ul className="mt-4 space-y-3">
                 {a.points.map((p) => (
@@ -425,15 +494,32 @@ export default function LandingPage() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.4 }}
           transition={{ type: "spring", stiffness: 120, damping: 16 }}
-          className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8"
+          className="relative mx-auto max-w-3xl px-4 sm:px-6 lg:px-8"
         >
-          <h2 className="text-3xl font-bold text-ink-900">Ready to bring EduQuiz to your school?</h2>
-          <p className="mt-3 text-ink-500">Reach out to your school administrator to get access, or log in if you already have an account.</p>
-          <motion.div className="mt-8 inline-block" whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}>
-            <Link to="/login" className="btn-primary px-6 py-3 text-base">
-              Log in to EduQuiz
-            </Link>
-          </motion.div>
+          <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-brand-600 to-accent-600 px-8 py-14 text-center shadow-2xl sm:px-14">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+              <Sparkles className="h-6 w-6 text-white" />
+            </div>
+            <h2 className="mt-5 text-3xl font-bold text-white">Ready to modernize your school's quizzes?</h2>
+            <p className="mx-auto mt-3 max-w-lg text-brand-50">
+              Log in if your school already uses EduQuiz, or contact your administrator to get access set up.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <motion.div whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}>
+                <Link to="/login" className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-semibold text-brand-700 shadow-sm transition-colors hover:bg-brand-50">
+                  Log in to EduQuiz <ArrowRight className="h-4 w-4" />
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.06 }} whileTap={{ scale: 0.95 }}>
+                <a
+                  href="mailto:hello@eduquiz.app?subject=EduQuiz%20for%20our%20school"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/40 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  <Mail className="h-4 w-4" /> Contact Administrator
+                </a>
+              </motion.div>
+            </div>
+          </div>
         </motion.div>
       </section>
 
