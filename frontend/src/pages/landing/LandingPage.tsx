@@ -20,7 +20,6 @@ import {
 import { Logo } from "../../components/Logo";
 import { RevealGroup, RevealCard, RevealItem } from "../../components/motion/Reveal";
 import { ThemeToggle } from "../../components/ui/ThemeToggle";
-import heroBackground from "../../assets/background.jpg";
 
 const NAV_LINKS = [
   { label: "How it works", href: "#how-it-works" },
@@ -34,31 +33,37 @@ const FEATURES = [
     icon: Timer,
     title: "Distraction-free quiz taking",
     description: "Countdown timers, question navigation, progress tracking, and automatic submission keep assessments fair and focused.",
+    accent: "brand" as const,
   },
   {
     icon: Library,
     title: "Powerful question banks",
     description: "Organize questions by subject, class, topic, and difficulty — then auto-generate quizzes in seconds.",
+    accent: "brand" as const,
   },
   {
     icon: BarChart3,
     title: "Real performance analytics",
     description: "Class averages, pass rates, weakest topics, and student trends — calculated from real submitted data.",
+    accent: "teal" as const,
   },
   {
     icon: ShieldCheck,
     title: "Built-in quiz integrity",
     description: "Randomized questions and options, attempt limits, and server-side grading and timing you can trust.",
+    accent: "brand" as const,
   },
   {
     icon: Users,
     title: "Role-based for your school",
     description: "Dedicated, permission-scoped experiences for students, teachers, and administrators.",
+    accent: "brand" as const,
   },
   {
     icon: Sparkles,
     title: "Instant, automatic grading",
     description: "Objective questions are graded the moment a quiz is submitted — no manual marking required.",
+    accent: "teal" as const,
   },
 ];
 
@@ -91,10 +96,10 @@ const SUBJECT_TICKER = [
 ];
 
 const TRUST_POINTS = [
-  { icon: ShieldCheck, label: "Server-verified grading" },
-  { icon: Timer, label: "Anti-cheat by design" },
-  { icon: GraduationCap, label: "Built for JHS curriculum" },
-  { icon: Sparkles, label: "Instant results" },
+  { icon: ShieldCheck, label: "Server-verified grading", accent: "brand" as const },
+  { icon: Timer, label: "Anti-cheat by design", accent: "brand" as const },
+  { icon: GraduationCap, label: "Built for JHS curriculum", accent: "brand" as const },
+  { icon: Sparkles, label: "Instant results", accent: "teal" as const },
 ];
 
 const heroWords = ["Learn.", "Practice.", "Improve."];
@@ -167,13 +172,10 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-brand-50 to-surface">
         <div className="pointer-events-none absolute inset-0">
-          <img
-            src={heroBackground}
-            alt=""
-            className="h-full w-full object-cover object-[center_28%] opacity-[0.28] saturate-[0.5] dark:opacity-[0.12] dark:saturate-[0.35]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-brand-50 via-brand-50/60 to-surface" />
-          <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-[radial-gradient(55%_45%_at_50%_-5%,#e0e7ff90,transparent)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(35%_30%_at_88%_15%,#ccfbf180,transparent)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(35%_30%_at_8%_80%,#fef3c780,transparent)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-surface" />
         </div>
 
         <div className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full bg-brand-300/40 blur-3xl animate-blob" />
@@ -203,7 +205,7 @@ export default function LandingPage() {
                 <div className="rounded-lg border border-brand-300 bg-brand-50 px-2.5 py-1.5 text-[11px] font-medium text-brand-700">
                   Carbon dioxide
                 </div>
-                <div className="rounded-lg border border-ink-100 px-2.5 py-1.5 text-[11px] text-ink-500">Oxygen</div>
+                <div className="rounded-lg border border-ink-100 px-2.5 py-1.5 text-[11px] text-ink-600">Oxygen</div>
               </div>
             </div>
           </motion.div>
@@ -243,7 +245,7 @@ export default function LandingPage() {
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <p className="mt-2 text-lg font-extrabold text-ink-900">9/10</p>
-              <p className="text-[11px] text-ink-500">Grade A · Passed</p>
+              <p className="text-[11px] text-ink-600">Grade A · Passed</p>
             </div>
           </motion.div>
         </div>
@@ -309,7 +311,7 @@ export default function LandingPage() {
 
         {/* Subject ticker */}
         <div className="relative border-t border-brand-100/60 bg-white/60 py-5 backdrop-blur">
-          <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-wider text-ink-400">Covers every core JHS subject</p>
+          <p className="mb-3 text-center text-[11px] font-semibold uppercase tracking-wider text-ink-500">Covers every core JHS subject</p>
           <div className="flex overflow-hidden">
             <div className="flex shrink-0 animate-marquee items-center gap-3 whitespace-nowrap pr-3">
               {[...SUBJECT_TICKER, ...SUBJECT_TICKER].map((subject, i) => (
@@ -329,9 +331,13 @@ export default function LandingPage() {
       <section className="border-b border-ink-100 bg-surface py-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <RevealGroup className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {TRUST_POINTS.map(({ icon: Icon, label }) => (
+            {TRUST_POINTS.map(({ icon: Icon, label, accent }) => (
               <RevealItem key={label} className="flex flex-col items-center gap-2 text-center sm:flex-row sm:text-left">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                    accent === "teal" ? "bg-accent-50 text-accent-600" : "bg-brand-50 text-brand-600"
+                  }`}
+                >
                   <Icon className="h-4.5 w-4.5" />
                 </div>
                 <p className="text-xs font-semibold text-ink-600 sm:text-sm">{label}</p>
@@ -342,10 +348,11 @@ export default function LandingPage() {
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+      <section id="how-it-works" className="bg-ink-50 py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold text-ink-900">How EduQuiz works</h2>
-          <p className="mt-3 text-ink-500">From question bank to graded result, in four simple steps.</p>
+          <p className="mt-3 text-ink-600">From question bank to graded result, in four simple steps.</p>
         </div>
         <RevealGroup className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
           {[
@@ -355,34 +362,41 @@ export default function LandingPage() {
             { step: "4", title: "Results, instantly", description: "Automatic grading and class-wide analytics appear right away." },
           ].map((s) => (
             <RevealCard key={s.step} className="card p-6 shadow-md transition-shadow duration-300 hover:shadow-2xl">
-              <div className="flex h-9 w-9 animate-pulse items-center justify-center rounded-full bg-brand-600 text-sm font-bold text-white">
+              <div
+                className={`flex h-9 w-9 animate-pulse items-center justify-center rounded-full text-sm font-bold text-white ${
+                  s.step === "4" ? "bg-accent-600" : "bg-brand-600"
+                }`}
+              >
                 {s.step}
               </div>
               <h3 className="mt-4 font-semibold text-ink-900">{s.title}</h3>
-              <p className="mt-1.5 text-sm text-ink-500">{s.description}</p>
+              <p className="mt-1.5 text-sm text-ink-600">{s.description}</p>
             </RevealCard>
           ))}
         </RevealGroup>
+        </div>
       </section>
 
       {/* Features */}
-      <section id="features" className="bg-ink-50 py-20">
+      <section id="features" className="py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold text-ink-900">Everything a modern assessment platform needs</h2>
-            <p className="mt-3 text-ink-500">Purpose-built for quizzes — not a bloated, generic school system.</p>
+            <p className="mt-3 text-ink-600">Purpose-built for quizzes — not a bloated, generic school system.</p>
           </div>
           <RevealGroup className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {FEATURES.map((f) => (
               <RevealCard key={f.title} className="card p-6 shadow-md transition-shadow duration-300 hover:shadow-2xl">
                 <motion.div
                   whileHover={{ rotate: 12, scale: 1.1 }}
-                  className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-100 text-brand-600"
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                    f.accent === "teal" ? "bg-accent-100 text-accent-700" : "bg-brand-100 text-brand-600"
+                  }`}
                 >
                   <f.icon className="h-5 w-5" />
                 </motion.div>
                 <h3 className="mt-4 font-semibold text-ink-900">{f.title}</h3>
-                <p className="mt-1.5 text-sm text-ink-500">{f.description}</p>
+                <p className="mt-1.5 text-sm text-ink-600">{f.description}</p>
               </RevealCard>
             ))}
           </RevealGroup>
@@ -390,7 +404,8 @@ export default function LandingPage() {
       </section>
 
       {/* Audiences */}
-      <section id="audiences" className="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8">
+      <section id="audiences" className="bg-ink-50 py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold text-ink-900">Built for every role in your school</h2>
         </div>
@@ -422,6 +437,7 @@ export default function LandingPage() {
             </RevealCard>
           ))}
         </RevealGroup>
+        </div>
       </section>
 
       {/* Security */}
@@ -477,7 +493,7 @@ export default function LandingPage() {
                     transition={{ duration: 0.25, ease: "easeInOut" }}
                     className="overflow-hidden"
                   >
-                    <p className="px-5 pb-4 text-sm text-ink-500">{faq.a}</p>
+                    <p className="px-5 pb-4 text-sm text-ink-600">{faq.a}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -526,7 +542,7 @@ export default function LandingPage() {
       <footer className="border-t border-ink-100 py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
           <Logo markClassName="h-7 w-7" />
-          <p className="text-xs text-ink-400">&copy; {new Date().getFullYear()} EduQuiz. All rights reserved.</p>
+          <p className="text-xs text-ink-500">&copy; {new Date().getFullYear()} EduQuiz. All rights reserved.</p>
         </div>
       </footer>
     </div>
