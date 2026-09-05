@@ -176,11 +176,13 @@ export default function LandingPage() {
           <img
             src={heroBackground}
             alt=""
-            className="h-full w-full object-cover object-[center_28%] opacity-[0.22] saturate-[0.45] dark:opacity-[0.1] dark:saturate-[0.3]"
+            className="h-full w-full object-cover object-[center_28%] opacity-[0.55] saturate-[0.85] dark:opacity-[0.28] dark:saturate-[0.55]"
           />
           <div className="absolute inset-0 bg-[radial-gradient(55%_45%_at_50%_-5%,#e0e7ff90,transparent)]" />
           <div className="absolute inset-0 bg-[radial-gradient(35%_30%_at_88%_15%,#ccfbf180,transparent)]" />
           <div className="absolute inset-0 bg-[radial-gradient(35%_30%_at_8%_80%,#fef3c780,transparent)]" />
+          {/* Protects text legibility over the now-clearer photo without dimming it at the edges. */}
+          <div className="absolute inset-0 bg-[radial-gradient(45%_40%_at_50%_38%,var(--color-surface)_0%,transparent_100%)] opacity-90" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-surface" />
         </div>
 
